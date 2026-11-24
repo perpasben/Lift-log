@@ -3,12 +3,15 @@
 import { setHeatRamp } from './logic/stats.js';
 
 export const PRESETS = {
+  apricot: { hex: '#ffab6e', mid: [255, 171, 110], top: [255, 214, 178] },
+  peach: { hex: '#ffc9a2', mid: [255, 201, 162], top: [255, 232, 214] },
+  amber: { hex: '#ffb64d', mid: [255, 182, 77], top: [255, 222, 163] },
   teal: { hex: '#3fc0b3', mid: [63, 192, 179], top: [181, 238, 231] },
   sand: { hex: '#e3cfa6', mid: [227, 207, 166], top: [248, 239, 218] },
   ice: { hex: '#b0cee2', mid: [176, 206, 226], top: [220, 236, 246] },
   orange: { hex: '#ff6b1f', mid: [255, 107, 31], top: [255, 192, 138] },
 };
-export const DEFAULT_ACCENT = 'ice';
+export const DEFAULT_ACCENT = 'apricot';
 
 export function accent2() {
   let key = DEFAULT_ACCENT;
