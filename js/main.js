@@ -51,16 +51,6 @@ async function boot() {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
 }
-// iOS standalone sometimes reports a layout viewport shorter than the screen. Trust the larger of the two.
-function fitHeight() {
-  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-  if (!standalone || innerWidth > innerHeight) return document.documentElement.style.removeProperty('--app-h');
-  document.documentElement.style.setProperty('--app-h', `${Math.max(innerHeight, screen.height)}px`);
-}
-fitHeight();
-addEventListener('resize', fitHeight);
-addEventListener('orientationchange', () => setTimeout(fitHeight, 200));
-
 // iOS ignores user-scalable=no in some modes: block pinch and double-tap zoom explicitly.
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
 let lastTouch = 0;
