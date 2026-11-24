@@ -148,9 +148,10 @@ function entryEl(ctx, e, repaint) {
       const alts = alternativesFor(e.exerciseId, ctx.exs, gym);
       return [h('h3', {}, ex?.name || 'Exercise'),
         h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.'),
-        alts.length ? h('div', { class: 'alt-h' }, `Swap ${ex?.name} for`) : null,
-        alts.length ? h('div', { class: 'card' }, ...alts.map((a) => h('button', { class: 'row', onclick: () => { close(); swapTo(a.id); } },
-          h('div', { class: 'grow t' }, ctx.exs[a.id].name), h('span', { class: 'chip' }, KIND_LABEL[a.kind])))) : null,
+        alts.length ? h('div', { class: 'alt-box' },
+          h('div', { class: 'alt-h' }, `Swap ${ex?.name} for`),
+          ...alts.map((a) => h('button', { class: 'row', onclick: () => { close(); swapTo(a.id); } },
+            h('div', { class: 'grow t' }, ctx.exs[a.id].name), h('span', { class: 'chip' }, KIND_LABEL[a.kind])))) : null,
         h('div', { class: 'card', style: 'margin-top:12px' },
         item('Other exercise\u2026', () => choose('Swap exercise')),
         item('Add warm-up set', () => { e.sets.unshift({ w: null, r: e.repMin, t: null, warm: true, done: false }); ctx.persist(); repaint(); }),

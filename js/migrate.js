@@ -14,13 +14,18 @@ export function flattenBlocks(blocks) {
 /** One-time upgrades of stored data. Safe to run on every start. */
 export async function migrate() {
   const v = await db.kvGet('schema', 1);
-  if (v >= 2) return;
-  const hasBig = !!(await db.get('gyms', 'big'));
-  for (const r of await db.all('routines')) {
-    r.blocks = flattenBlocks(r.blocks);
-    if (hasBig && BIG_PLAN[r.id]) r.gymBlocks = { ...(r.gymBlocks || {}), big: bigVariant(r.id) };
-    await db.put('routines', r);
+  if (v < 2) {
+    const hasBig = !!(await db.get('gyms', 'big'));
+    for (const r of await db.all('routines')) {
+      r.blocks = flattenBlocks(r.blocks);
+      if (hasBig && BIG_PLAN[r.id]) r.gymBlocks = { ...(r.gymBlocks || {}), big: bigVariant(r.id) };
+      await db.put('routines', r);
+    }
+    if (hasBig) { await db.putMany('slots', bigSlots()); await db.putMany('assignments', bigAssignments()); }
   }
-  if (hasBig) { await db.putMany('slots', bigSlots()); await db.putMany('assignments', bigAssignments()); }
-  await db.kvSet('schema', 2);
+  if (v < 3) { // the big gym is called Sportrade
+    const g = await db.get('gyms', 'big');
+    if (g && g.name === 'Big gym') { g.name = 'Sportrade'; await db.put('gyms', g); }
+  }
+  await db.kvSet('schema', 3);
 }

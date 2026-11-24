@@ -1,5 +1,5 @@
 import * as db from '../db.js';
-import { h, topbar, fmtDate, fmtDur } from '../ui.js';
+import { h, topbar, fmtDate, fmtDur, confirmSheet, toast } from '../ui.js';
 import { icon } from '../icons.js';
 import { muscleMapSection } from './musclemap.js';
 import { fmtSet } from './workout.js';
@@ -110,6 +110,16 @@ function sessionView(ctx, id) {
       h('span', { class: 'chev', html: icon('chev') })));
   }
   if (s.entries.length) out.append(card);
+  out.append(h('button', { class: 'btn block danger', style: 'margin-top:22px', onclick: async () => {
+    const when = new Date(s.start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (!(await confirmSheet({ title: 'Delete this workout?', body: `${label(s)}, ${when}. It is removed from your history and your totals. This cannot be undone.`, ok: 'Delete workout', danger: true }))) return;
+    await db.del('sessions', s.id);
+    for (const p of await db.all('pending')) if (p.id.startsWith(`p_${s.id}_`)) await db.del('pending', p.id);
+    // remember it so re-importing the StrengthLog CSV does not bring it back
+    await db.kvSet('deleted', [...new Set([...(await db.kvGet('deleted', [])), s.id])]);
+    toast('Workout deleted');
+    ctx.nav.back();
+  } }, 'Delete workout'));
   return out;
 }
 

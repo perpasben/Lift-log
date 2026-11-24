@@ -246,4 +246,9 @@ svg.i.f { fill: currentColor; stroke: none; }
 .iv-stage { border-radius: 16px; }
 .rest { border-radius: 14px; }
 
-.alt-h { color: var(--mu); font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
+.alt-box { margin: 16px 0 0; padding: 12px 10px 4px; border-radius: 14px; background: #27272b; border: 1px solid #3c3c42; }
+.alt-h { color: #b9b9c0; font-size: 14px; font-weight: 600; margin: 0 4px 6px; }
+.alt-box .row { padding: 13px 4px; }
+.alt-box .row + .row { border-top: 1px solid #3a3a40; }
+.alt-box .chip { background: #323237; border-color: #46464d; color: #d4d4da; }
+button.row:active.alt-row { background: none; }

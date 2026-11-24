@@ -68,7 +68,8 @@ async function importCsv(nav) {
   for (const n of exerciseNames) if (!ids.has(slug(n))) fresh.push({ id: slug(n), name: n, aliases: [], muscle: '', equipment: [], type: 'wr', builtin: false });
   if (fresh.length) await db.putMany('exercises', fresh);
   for (const s of sessions) { s.entries.forEach((e) => { e.exerciseId = slug(e.exerciseName); delete e.exerciseName; }); }
-  await db.putMany('sessions', sessions);
+  const gone = new Set(await db.kvGet('deleted', []));
+  await db.putMany('sessions', sessions.filter((x) => !gone.has(x.id)));
   toast(`Imported ${sessions.length} workouts${fresh.length ? `, ${fresh.length} new exercises` : ''}`, 3500);
   nav.refresh();
 }

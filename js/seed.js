@@ -144,7 +144,7 @@ export function seedGyms() {
   const mk = (id, name, on, extra) => ({ id, name, increment: 2.5, maxDumbbell: null, equipment: EQUIPMENT.map(([key, label]) => ({ key, label, on: on(key) })), ...extra });
   return [
     mk('office', 'Office', (k) => OFFICE_EQ.includes(k), { note: 'Screw-on dumbbells: avoid when there is an alternative.' }),
-    mk('big', 'Big gym', (k) => k !== 'dumbbell-screw', { maxDumbbell: null }),
+    mk('big', 'Sportrade', (k) => k !== 'dumbbell-screw', { maxDumbbell: null }),
   ];
 }
 
