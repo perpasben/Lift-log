@@ -4,6 +4,7 @@ import { nextRoutine, pendingFor, ROTATION } from '../logic/carryover.js';
 import { buildWorkout } from '../logic/workout.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
+import { extrasView } from './extras.js';
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 
@@ -66,6 +67,6 @@ export async function trainView({ nav }) {
     h('div', { class: 'card' },
       ...(active ? [] : others.map((r) => row(`Do ${NAMES[r]} instead`, null, () => start(r, nav)))),
       row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
-      row('Mobility, abs, farmer’s walk', null, () => toast('Mobility and abs arrive in phase 4'))),
+      row('Extras', 'Mobility, abs, farmer’s walk', () => nav.push(extrasView))),
     h('p', { class: 'muted', style: 'margin-top:22px;font-size:14px' }, sessions.length ? `${sessions.length} workouts logged.` : 'No workouts yet. Import your StrengthLog history in Settings.'));
 }

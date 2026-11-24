@@ -165,3 +165,21 @@ export function seedAssignments() {
 }
 
 export const SETTINGS_DEFAULT = { restSec: 90, lastGymId: 'big' };
+
+// Circuits do not log weight. "steps" = checklist (optionally timed); "interval" = work/rest timer.
+export const CIRCUITS = [
+  { id: 'mobility', name: 'Mobility', kind: 'steps', blurb: '7 moves, about 8 minutes', steps: [
+    { name: 'Cat-Cow', reps: 10 },
+    { name: '90/90 Hip Switch', reps: 8, perSide: true },
+    { name: 'Lunge With Thoracic Rotation', reps: 6, perSide: true },
+    { name: 'Open Book', reps: 8, perSide: true },
+    { name: 'Hip Flexor Stretch', seconds: 45, perSide: true },
+    { name: 'Hamstring Stretch', seconds: 45, perSide: true },
+    { name: 'Bar Hang', seconds: 30 },
+  ] },
+  { id: 'abs', name: 'Abs', kind: 'interval', blurb: '3 rounds · 7 exercises · 40 s work / 20 s rest', work: 40, rest: 20, rounds: 3,
+    items: ['Cable Crunch', 'Hanging Leg Raise', 'Pallof Press', 'Stability Ball Rollout', 'Dead Bug', 'Plank', 'Side Plank'] },
+  { id: 'farmer', name: "Farmer's walk", kind: 'steps', blurb: '3 × 30 m with kettlebells', steps: [
+    { name: "Farmer's Walk", meters: 30 }, { name: "Farmer's Walk", meters: 30 }, { name: "Farmer's Walk", meters: 30 },
+  ] },
+];

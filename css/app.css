@@ -160,3 +160,17 @@ svg.i.f { fill: currentColor; stroke: none; }
 .stat3 div { background: var(--s2); border-radius: 16px; padding: 14px 10px; text-align: center; }
 .stat3 b { display: block; font-size: 24px; letter-spacing: -.03em; }
 .stat3 span { color: var(--mu); font-size: 12px; }
+
+/* circuits */
+.row.is-done .t { color: var(--mu); }
+.iv-stage { text-align: center; padding: 26px 16px 22px; border-radius: 28px; border: 1px solid var(--line); background: var(--s1); margin-bottom: 14px; min-height: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.iv-stage.idle { min-height: 0; background: none; border: 0; padding: 6px 0 0; display: block; }
+.iv-stage.work { background: #1b0d04; border-color: #ff6b1f55; }
+.iv-stage.ready { background: var(--s2); }
+.iv-phase { font-size: 14px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--mu); }
+.iv-stage.work .iv-phase { color: var(--ac); }
+.iv-big { font-size: 112px; line-height: 1; font-weight: 750; letter-spacing: -.06em; }
+.iv-stage.idle .iv-big { font-size: 64px; }
+.iv-name { font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
+.iv-ctl { display: flex; gap: 10px; }
+.iv-ctl .btn.block { width: 100%; }
