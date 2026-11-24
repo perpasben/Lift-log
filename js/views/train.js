@@ -11,8 +11,7 @@ export async function trainView({ nav }) {
   const extra = pendingFor(pending, 'extra').length;
   const items = routine.blocks.reduce((n, b) => n + b.items.length, 0);
 
-  return h('div', {},
-    h('div', { class: 'top' }),
+  return h('div', { style: 'padding-top:18px' },
     h('div', { class: 'hero' },
       h('div', { class: 'kick' }, 'Up next'),
       h('div', { class: 'big' }, routine.name),

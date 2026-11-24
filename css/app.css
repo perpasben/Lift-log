@@ -47,7 +47,8 @@ button.row:active { background: var(--s2); }
 
 /* hero (next workout) */
 .hero { position: relative; padding: 22px 20px 20px; border-radius: 26px; background: var(--s1); border: 1px solid var(--line); overflow: hidden; }
-.hero::after { content: ""; position: absolute; right: -64px; top: -64px; width: 210px; height: 210px; border-radius: 50%; border: 22px solid var(--ac); pointer-events: none; }
+.hero::after { content: ""; position: absolute; right: -64px; top: -64px; width: 170px; height: 170px; border-radius: 50%; border: 18px solid var(--ac); opacity: .9; pointer-events: none; z-index: 0; }
+.hero > * { position: relative; z-index: 1; }
 .hero .kick { color: var(--mu); font-size: 13px; text-transform: uppercase; letter-spacing: .09em; font-weight: 600; }
 .hero .big { font-size: 58px; line-height: .95; font-weight: 750; letter-spacing: -.05em; margin: 8px 0 14px; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
