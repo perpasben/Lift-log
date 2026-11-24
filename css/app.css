@@ -360,7 +360,7 @@ button.row:active.alt-row { background: none; }
 .rest-t { flex: none; text-align: left; font-size: 20px; font-weight: 650; min-width: 48px; }
 .rest.over .rest-t { font-size: 16px; }
 .rest-line { flex: 1; height: 3px; border-radius: 2px; background: var(--s3); overflow: hidden; }
-.rest-line i { display: block; height: 100%; width: 0; background: #fff; border-radius: 2px; transition: width .25s linear; }
+.rest-line i { display: block; height: 100%; width: 0; background: var(--ac2); border-radius: 2px; transition: width .25s linear; }
 .rest-b { height: 38px; min-width: 40px; padding: 0 6px; border-radius: 10px; font-size: 14px; color: #c9c9cf; }
 .rest-b.x svg.i { width: 20px; height: 20px; transform: rotate(45deg); }
 
