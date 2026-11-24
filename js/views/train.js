@@ -91,7 +91,7 @@ export async function trainView({ nav }) {
   const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
     h('button', { class: 'hp-cam', 'aria-label': photo ? 'Change photo' : 'Add a photo', onclick: changePhoto, html: `${icon('camera')}${photo ? '' : '<span>Add photo</span>'}` }),
     h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`),
-    h('div', { class: 'hp-h' }, `${name} `, h('span', {}, 'day.')),
+    h('div', { class: 'hp-h' }, `${name} day.`),
     h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
     h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView) : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
 
@@ -101,9 +101,9 @@ export async function trainView({ nav }) {
   const avg = Math.round((wk.reduce((a, b) => a + b, 0) / wk.length) * 10) / 10;
   const sets2w = Object.values(muscleLoad(sessions, exMap, { days: 14 }).counts).reduce((a, b) => a + b, 0);
   const strip = lifting.length >= 3 ? h('div', { class: 'strip' },
-    h('div', {}, weekRing(wk.at(-1)), h('b', { class: 'num' }, `${wk.at(-1)}/4`), h('span', {}, 'last 7 days')),
-    h('div', {}, h('b', { class: 'num' }, String(avg)), h('span', {}, 'workouts a week')),
-    h('div', {}, h('b', { class: 'num' }, String(sets2w)), h('span', {}, 'sets, 2 weeks'))) : null;
+    h('div', {}, h('span', { class: 'si' }, weekRing(wk.at(-1))), h('b', { class: 'num' }, `${wk.at(-1)}/4`), h('span', {}, 'last 7 days')),
+    h('div', {}, h('span', { class: 'si', html: icon('history') }), h('b', { class: 'num' }, String(avg)), h('span', {}, 'workouts a week')),
+    h('div', {}, h('span', { class: 'si', html: icon('train') }), h('b', { class: 'num' }, String(sets2w)), h('span', {}, 'sets, 2 weeks'))) : null;
 
   const planSec = active || !plan.length ? null : h('div', {},
     h('div', { class: 'sec-h' }, h('b', {}, 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
