@@ -16,7 +16,7 @@ export function initRest(h2 = {}) {
   actName = h('b', {}, '');
   actTime = h('span', { class: 'num' }, '');
   actBar = h('button', { class: 'actbar', hidden: true, onclick: () => hooks.openWorkout?.() },
-    h('span', { class: 'act-dot' }), h('span', { class: 'act-t' }, h('small', {}, 'Active workout'), h('span', {}, actName, ' \u00b7 ', actTime)), h('span', { class: 'act-go' }, 'Resume'));
+    h('span', { class: 'rest-ic', html: icon('train') }), h('span', { class: 'act-t' }, h('small', {}, 'Active workout'), h('span', {}, actName, ' \u00b7 ', actTime)), h('span', { class: 'act-go' }, 'Resume'));
   document.getElementById('app').insertBefore(actBar, document.getElementById('tabs'));
   label = h('span', { class: 'rest-t num' });
   bar = h('i', {});
