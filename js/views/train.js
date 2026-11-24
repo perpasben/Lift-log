@@ -9,21 +9,24 @@ import { muscleMapSection } from './musclemap.js';
 import { insightsCarousel } from './carousel.js';
 import { accent2 } from '../theme.js';
 import { akey } from '../logic/substitution.js';
+import { heroPhoto, photos, pickPhoto, setPhoto } from '../photos.js';
+import { icon } from '../icons.js';
+import { howTo } from '../howto.js';
+import { photosView } from './photos.js';
+import { weeklyCounts, muscleLoad } from '../logic/stats.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 // Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
-function weekDial(done, goal = 4) {
-  const ns = 'http://www.w3.org/2000/svg', R = 30, C = 40, gap = 16, seg = 360 / goal - gap;
+function weekRing(done, goal = 4) {
+  const R = 17, C = 22, gap = 18, seg = 360 / goal - gap;
   const pt = (deg) => { const a = ((deg - 90) * Math.PI) / 180; return [C + R * Math.cos(a), C + R * Math.sin(a)]; };
   let paths = '';
   for (let i = 0; i < goal; i++) {
     const a0 = i * (360 / goal) + gap / 2, a1 = a0 + seg;
     const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
-    paths += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${i < done ? accent2().hex : '#2a2724'}" stroke-width="7"/>`;
+    paths += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${i < done ? accent2().hex : '#2a2724'}" stroke-width="4.5"/>`;
   }
-  const el = h('div', { class: 'dial', role: 'img', 'aria-label': `${done} of ${goal} workouts in the last 7 days` });
-  el.innerHTML = `<svg viewBox="0 0 80 80" width="84" height="84">${paths}<text x="40" y="46" text-anchor="middle" class="dial-n">${done}</text></svg><span>last 7 days<br>goal ${goal}</span>`;
-  return el;
+  return h('span', { class: 'ring', role: 'img', 'aria-label': `${done} of ${goal} workouts in the last 7 days`, html: `<svg viewBox="0 0 44 44" width="44" height="44">${paths}</svg>` });
 }
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
@@ -66,34 +69,61 @@ export async function trainView({ nav }) {
   const gym = gyms.find((g) => g.id === settings.lastGymId) || gyms[0];
   const carried = pendingFor(pending, next).length;
   const extra = pendingFor(pending, 'extra').length;
-  const items = routine.blocks.reduce((n, b) => n + b.items.length, 0);
   const others = ROTATION.filter((r) => r !== next);
-
-  const hero = active
-    ? h('div', { class: 'hero' },
-      h('div', { class: 'kick' }, 'In progress'),
-      h('div', { class: 'big' }, NAMES[active.routineId] || 'Workout'),
-      h('div', { class: 'chips' }, h('span', { class: 'chip' }, gyms.find((g) => g.id === active.gymId)?.name), h('span', { class: 'chip ac' }, `started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)),
-      h('button', { class: 'btn pri block', onclick: () => nav.push(workoutView) }, 'Resume workout'))
-    : h('div', { class: 'hero' },
-      weekDial(sessions.filter((x) => x.entries.length && x.start > Date.now() - 7 * 86400000).length),
-      h('div', { class: 'kick' }, 'Up next'),
-      h('div', { class: 'big' }, routine.name),
-      h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${items} exercises`), h('span', { class: 'chip' }, gym?.name), carried ? h('span', { class: 'chip ac' }, `${carried} carried over`) : null),
-      h('button', { class: 'btn pri block', onclick: () => start(next, nav) }, 'Start workout'));
-
-  const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
   const exMap = Object.fromEntries(exAll.map((e) => [e.id, e]));
   const asg = Object.fromEntries(asgAll.map((a) => [a.id, a.exerciseId]));
-  const planned = (routine.gymBlocks?.[gym?.id] || routine.blocks).flatMap((b) => b.items.map((it) => ({ id: asg[akey(it.slotId, gym?.id)], repMin: it.repMin, repMax: it.repMax }))).filter((p) => p.id);
-  return h('div', { style: 'padding-top:18px' }, hero,
+  const shownId = active ? active.routineId : next;
+
+  // today's plan at the gym you will use
+  const plan = (routine.gymBlocks?.[gym?.id] || routine.blocks).flatMap((b) => b.items.map((it) => ({ id: asg[akey(it.slotId, gym?.id)], sets: b.rounds, repMin: it.repMin, repMax: it.repMax }))).filter((p) => p.id);
+  const totalSets = plan.reduce((n, p) => n + p.sets, 0);
+  const lens = sessions.filter((s) => s.routineId === next && s.gymId === gym?.id).sort((a, b) => b.start - a.start).slice(0, 6).map((s) => Math.round((s.end - s.start) / 60000)).filter((m) => m >= 15 && m <= 120).sort((a, b) => a - b);
+  const minutes = lens.length ? lens[Math.floor(lens.length / 2)] : Math.round(totalSets * 3);
+
+  const avatar = photos().avatar;
+  const top = h('div', { class: 'home-top' },
+    h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('b', {}, 'LiftLog')),
+    h('button', { class: 'avatar', 'aria-label': 'Photos', style: avatar ? `background-image:url(${avatar})` : '', html: avatar ? '' : icon('user'), onclick: () => nav.push(photosView) }));
+
+  const photo = heroPhoto(shownId);
+  const changePhoto = async () => { const url = await pickPhoto(1000); if (!url) return; await setPhoto(shownId, url); nav.refresh(); };
+  const name = NAMES[shownId] || 'Workout';
+  const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
+    h('button', { class: 'hp-cam', 'aria-label': photo ? 'Change photo' : 'Add a photo', onclick: changePhoto, html: `${icon('camera')}${photo ? '' : '<span>Add photo</span>'}` }),
+    h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`),
+    h('div', { class: 'hp-h' }, `${name} `, h('span', {}, 'day.')),
+    h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
+    h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView) : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
+
+  // three real numbers, one strip
+  const lifting = sessions.filter((s) => s.entries.length);
+  const wk = weeklyCounts(lifting, Date.now(), 6);
+  const avg = Math.round((wk.reduce((a, b) => a + b, 0) / wk.length) * 10) / 10;
+  const sets2w = Object.values(muscleLoad(sessions, exMap, { days: 14 }).counts).reduce((a, b) => a + b, 0);
+  const strip = lifting.length >= 3 ? h('div', { class: 'strip' },
+    h('div', {}, weekRing(wk.at(-1)), h('b', { class: 'num' }, `${wk.at(-1)}/4`), h('span', {}, 'last 7 days')),
+    h('div', {}, h('b', { class: 'num' }, String(avg)), h('span', {}, 'workouts a week')),
+    h('div', {}, h('b', { class: 'num' }, String(sets2w)), h('span', {}, 'sets, 2 weeks'))) : null;
+
+  const planSec = active || !plan.length ? null : h('div', {},
+    h('div', { class: 'sec-h' }, h('b', {}, 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
+    h('div', { class: 'plan' }, ...plan.map((p, i) => {
+      const ex = exMap[p.id];
+      return h('button', { class: 'plan-row', onclick: () => sheet((close) => [h('h3', {}, ex.name), h('p', { class: 'muted', style: 'margin:0 0 10px' }, `${p.sets} sets${p.repMax ? ` \u00b7 ${p.repMin === p.repMax ? p.repMax : `${p.repMin}\u2013${p.repMax}`} reps` : ''}`), h('p', { class: 'how' }, howTo(ex) || 'No description yet.'), h('button', { class: 'btn block', style: 'margin-top:16px', onclick: close }, 'Close')]) },
+        h('span', { class: 'pn num' }, String(i + 1)),
+        h('div', { class: 'grow' }, h('div', { class: 't' }, ex.name), h('div', { class: 'd' }, `${p.sets} sets${p.repMax ? ` \u00b7 ${p.repMin === p.repMax ? p.repMax : `${p.repMin}\u2013${p.repMax}`} reps` : ''}`)),
+        h('span', { class: 'chev', html: icon('chev') }));
+    })));
+
+  const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
+  const planned = plan.map((p) => ({ id: p.id, repMin: p.repMin, repMax: p.repMax }));
+  return h('div', { class: 'home' }, top, hero, strip, planSec,
     !active && sessions.length >= 3 ? insightsCarousel({ sessions, exercises: exMap, gyms, nextId: next, gym, planned }) : null,
     active ? null : h('h2', {}, 'Or instead'),
     active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-dot' }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
     h('h2', {}, 'Extras'),
     h('div', { class: 'card plain' },
       row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
-      row('Extras', 'Mobility, abs, farmer’s walk', () => nav.push(extrasView))),
-    h('p', { class: 'muted', style: 'margin-top:22px;font-size:14px' }, sessions.length ? `${sessions.length} workouts logged.` : 'No workouts yet. Import your StrengthLog history in Settings.'),
+      row('Extras', 'Mobility, abs, farmer\u2019s walk', () => nav.push(extrasView))),
     await muscleMapSection());
 }

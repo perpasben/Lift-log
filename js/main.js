@@ -11,6 +11,7 @@ import { workoutView } from './views/workout.js';
 import { initRest, refreshRest } from './rest.js';
 import { migrate } from './migrate.js';
 import { applyAccent2 } from './theme.js';
+import { loadPhotos } from './photos.js';
 
 const TABS = [['train', 'Train', trainView], ['history', 'History', historyView], ['library', 'Library', libraryView], ['settings', 'Settings', settingsView]];
 
@@ -71,6 +72,7 @@ async function boot() {
   await seed();
   await migrate();
   await loadActive();
+  await loadPhotos();
   if (getActive()) stacks.train.push({ view: workoutView, scroll: 0 }); // reopen the running workout
   render();
   initRest({

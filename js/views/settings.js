@@ -2,6 +2,7 @@ import * as db from '../db.js';
 import { VERSION, BUILD } from '../version.js';
 import { h, topbar, toast, confirmSheet, sheet } from '../ui.js';
 import { migrate } from '../migrate.js';
+import { photosView } from './photos.js';
 import { parseCsv, csvToSessions, slug } from '../logic/csv.js';
 
 const pickFile = (accept) => new Promise((res) => {
@@ -96,6 +97,8 @@ export async function settingsView({ nav }) {
     h('h2', {}, 'Training'),
     h('div', { class: 'card' }, h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Default rest'),
       h('div', { class: 'step' }, h('button', { 'aria-label': 'Less', onclick: bump(-15) }, '−'), rest, h('button', { 'aria-label': 'More', onclick: bump(15) }, '+')))),
+    h('h2', {}, 'Personal'),
+    h('div', { class: 'card' }, row('Photos', 'Avatar and home card pictures', () => nav.push(photosView))),
     h('h2', {}, 'Data'),
     h('div', { class: 'card' },
       row('Export backup', 'All data as one JSON file', exportData),
