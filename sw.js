@@ -1,9 +1,9 @@
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const BUILD = '__BUILD__';
 const CACHE = `liftlog-${VERSION}-${BUILD}`;
 const ASSETS = [
   './', 'index.html', 'manifest.json', 'css/app.css', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
-  'js/main.js', 'js/active.js', 'js/rest.js', 'js/logic/workout.js', 'js/views/workout.js', 'js/version.js', 'js/db.js', 'js/seed.js', 'js/ui.js', 'js/icons.js',
+  'js/main.js', 'js/active.js', 'js/howto.js', 'js/rest.js', 'js/logic/workout.js', 'js/views/workout.js', 'js/version.js', 'js/db.js', 'js/seed.js', 'js/ui.js', 'js/icons.js',
   'js/logic/progression.js', 'js/logic/timer.js', 'js/logic/substitution.js', 'js/logic/carryover.js', 'js/logic/csv.js',
   'js/views/train.js', 'js/views/history.js', 'js/views/library.js', 'js/views/picker.js', 'js/views/settings.js',
 ];

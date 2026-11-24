@@ -4,7 +4,8 @@ import { icon } from '../icons.js';
 import { getActive, saveActive, clearActive } from '../active.js';
 import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
-import { lastFor, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
+import { lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
+import { howTo } from '../howto.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
 
@@ -23,8 +24,8 @@ export async function workoutView({ nav }) {
   const w = getActive();
   const root = h('div');
   if (!w) { root.append(h('div', { class: 'empty' }, 'No workout in progress.')); return root; }
-  const [gym, exList, sessions, settings] = await Promise.all([db.get('gyms', w.gymId), db.all('exercises'), db.all('sessions'), db.kvGet('settings', { restSec: 90 })]);
-  const ctx = { w, gym, exs: Object.fromEntries(exList.map((x) => [x.id, x])), sessions, settings, nav };
+  const [gym, exList, sessions, settings, allGyms] = await Promise.all([db.get('gyms', w.gymId), db.all('exercises'), db.all('sessions'), db.kvGet('settings', { restSec: 90 }), db.all('gyms')]);
+  const ctx = { gymNames: Object.fromEntries(allGyms.map((g) => [g.id, g.name])), w, gym, exs: Object.fromEntries(exList.map((x) => [x.id, x])), sessions, settings, nav };
   const persist = () => saveActive();
   ctx.persist = persist;
 
@@ -46,9 +47,10 @@ export async function workoutView({ nav }) {
       if (!id) return;
       await refreshExs(ctx);
       const type = ctx.exs[id]?.type || 'wr';
-      const last = lastFor(sessions, id, gym.id);
-      const b = { id: uid('b'), label: 'Added', kind: 'added', rounds: 3, entryIds: [] };
-      const e = { id: uid(), blockId: b.id, slotId: null, exerciseId: id, baseExerciseId: id, repMin: 8, repMax: 12, skipped: false, sets: makeSets(3, { type, last, repMin: 8, repMax: 12, increment: gym.increment }) };
+      const last = lastPreferGym(sessions, id, gym.id);
+      const d = addedDefaults(last, { increment: gym.increment, type });
+      const b = { id: uid('b'), label: 'Added', kind: 'added', rounds: d.sets.length, entryIds: [] };
+      const e = { id: uid(), blockId: b.id, slotId: null, exerciseId: id, baseExerciseId: id, repMin: d.repMin, repMax: d.repMax, skipped: false, sets: d.sets };
       b.entryIds.push(e.id); w.blocks.push(b); w.entries.push(e); persist(); paintAll();
     } }, h('span', { html: icon('plus') }), 'Add exercise'),
     h('button', { class: 'btn block danger', style: 'margin-top:10px', onclick: async () => {
@@ -94,7 +96,7 @@ function entryEl(ctx, e, repaint) {
     ctx.exs[id] ||= {};
     e.exerciseId = id;
     const t = ctx.exs[id]?.type || 'wr';
-    const last = lastFor(sessions, id, gym.id);
+    const last = lastPreferGym(sessions, id, gym.id);
     const done = e.sets.filter((s) => s.done);
     const fresh = makeSets(Math.max(0, e.sets.length - done.length), { type: t, last, repMin: e.repMin, repMax: e.repMax, increment: gym.increment });
     e.sets = [...done, ...fresh];
@@ -108,11 +110,11 @@ function entryEl(ctx, e, repaint) {
     return card;
   }
 
-  const last = lastFor(sessions, e.exerciseId, gym.id);
+  const last = lastPreferGym(sessions, e.exerciseId, gym.id);
   const sug = suggestionFor(last, { repMin: e.repMin, repMax: e.repMax, increment: gym.increment });
   const meta = h('div', { class: 'meta' },
-    last ? `Last ${new Date(last.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}: ${last.sets.slice(0, 5).map((s) => fmtSet(type, s)).join(' · ')}` : 'First time here',
-    sug?.bumped ? h('span', { class: 'up' }, ` · ↑ try ${kg(sug.weight)}`) : null);
+    last ? `Last${last.elsewhere ? ` at ${ctx.gymNames[last.gymId] || 'another gym'}` : ''} ${new Date(last.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}: ${last.sets.slice(0, 5).map((s) => fmtSet(type, s)).join(' · ')}` : 'First time here',
+    sug?.bumped && !last.elsewhere ? h('span', { class: 'up' }, ` · ↑ try ${kg(sug.weight)}`) : null);
 
   card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId), meta,
     e.repMax ? h('div', { class: 'meta' }, e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`) : null),
@@ -136,14 +138,19 @@ function entryEl(ctx, e, repaint) {
       ctx.persist();
       if (s.done && restDue(w, e, i)) startRest(settings.restSec);
     });
-    card.append(row);
+    card.append(swipeable(row, [
+      { label: s.warm ? 'Work set' : 'Warm-up', fn: () => { s.warm = !s.warm; ctx.persist(); repaint(); } },
+      { label: 'Delete', cls: 'del', fn: () => { e.sets.splice(i, 1); ctx.persist(); repaint(); } }]));
   });
   card.append(h('button', { class: 'addset', onclick: () => { const t = e.sets[e.sets.length - 1]; e.sets.push({ w: t?.w ?? null, r: t?.r ?? e.repMin, t: t?.t ?? null, warm: false, done: false }); ctx.persist(); repaint(); } }, h('span', { html: icon('plus') }), 'Set'));
 
   function menu() {
     sheet((close) => {
       const item = (label, fn, danger) => h('button', { class: 'row', style: danger ? 'color:var(--bad)' : '', onclick: () => { close(); fn(); } }, h('div', { class: 'grow t' }, label));
-      return [h('h3', {}, ex?.name || 'Exercise'), h('div', { class: 'card', style: 'margin-top:12px' },
+      const how = howTo(ex);
+      return [h('h3', {}, ex?.name || 'Exercise'),
+        h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.'),
+        h('div', { class: 'card', style: 'margin-top:12px' },
         item('Swap for another exercise', () => choose('Swap exercise')),
         item('Add warm-up set', () => { e.sets.unshift({ w: null, r: e.repMin, t: null, warm: true, done: false }); ctx.persist(); repaint(); }),
         e.sets.length > 1 ? item('Remove last set', () => { e.sets.pop(); ctx.persist(); repaint(); }) : null,
@@ -151,6 +158,34 @@ function entryEl(ctx, e, repaint) {
     });
   }
   return card;
+}
+
+/* ---------- swipe to reveal actions ---------- */
+let openRow = null;
+function swipeable(row, actions) {
+  const W = actions.length * 78;
+  const wrap = h('div', { class: 'swipe' });
+  wrap.append(h('div', { class: 'swipe-act' }, ...actions.map((a) => h('button', { class: `sa ${a.cls || ''}`, onclick: a.fn }, a.label))), row);
+  let x = 0, sx = 0, sy = 0, base = 0, mode = null, pid = null, opened = false, swipedAt = 0;
+  const move = (v, anim) => { x = v; row.style.transition = anim ? 'transform .2s ease' : 'none'; row.style.transform = `translateX(${v}px)`; };
+  const api = { close() { opened = false; move(0, true); if (openRow === api) openRow = null; } };
+  row.style.touchAction = 'pan-y';
+  row.addEventListener('pointerdown', (e) => { if (openRow && openRow !== api) openRow.close(); sx = e.clientX; sy = e.clientY; base = opened ? -W : 0; mode = null; pid = e.pointerId; });
+  row.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pid) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (!mode) { if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.4) { mode = 'h'; try { row.setPointerCapture(pid); } catch {} } else if (Math.abs(dy) > 8) mode = 'v'; }
+    if (mode === 'h') move(Math.min(0, Math.max(-W - 24, base + dx)));
+  });
+  const end = (e) => {
+    if (e.pointerId !== pid) return;
+    if (mode === 'h') { swipedAt = Date.now(); opened = x < -W / 2.5; move(opened ? -W : 0, true); openRow = opened ? api : null; }
+    pid = null; mode = null;
+  };
+  row.addEventListener('pointerup', end);
+  row.addEventListener('pointercancel', end);
+  row.addEventListener('click', (ev) => { if (Date.now() - swipedAt < 350) { ev.stopPropagation(); ev.preventDefault(); return; } if (opened) { ev.stopPropagation(); ev.preventDefault(); api.close(); } }, true);
+  return wrap;
 }
 
 /* ---------- finishing ---------- */

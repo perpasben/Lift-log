@@ -79,12 +79,13 @@ test('carryover: per-exercise decision; carry vs extra; next routine rotation', 
 });
 
 test('csv: quoted commas, sessions, time, routine guess', () => {
-  const txt = 'workout,start,end,exercise,weight,extraWeight,reps,time,warmup\r\n' +
-    '"Wed, Evening: Pull",100,200,Pull-Up,,5,8,,false\n' +
-    '"Wed, Evening: Pull",100,200,Bar Hang,,0,,00:00:35,false\n' +
-    'LEG,300,400,Leg Extension,40,,10,,true\n';
+  const txt = 'workout,start,end,exercise,weight,extraWeight,reps,time,warmup,checked\r\n' +
+    '"Wed, Evening: Pull",100,200,Pull-Up,,5,8,,false,150\n' +
+    '"Wed, Evening: Pull",100,200,Bar Hang,,0,,00:00:35,false,160\n' +
+    '"Wed, Evening: Pull",100,200,Skipped Thing,0,,0,,false,\n' +
+    'LEG,300,400,Leg Extension,40,,10,,true,350\n';
   const rows = parseCsv(txt);
-  assert.equal(rows.length, 3);
+  assert.equal(rows.length, 4);
   assert.equal(rows[0].workout, 'Wed, Evening: Pull');
   const { sessions, exerciseNames } = csvToSessions(rows, 'big');
   assert.equal(sessions.length, 2);
@@ -92,7 +93,7 @@ test('csv: quoted commas, sessions, time, routine guess', () => {
   assert.equal(sessions[0].entries[0].sets[0].w, 5);
   assert.equal(sessions[0].entries[1].sets[0].t, 35);
   assert.equal(sessions[1].entries[0].sets[0].warm, true);
-  assert.deepEqual(exerciseNames.sort(), ['Bar Hang', 'Leg Extension', 'Pull-Up']);
+  assert.deepEqual(exerciseNames.sort(), ['Bar Hang', 'Leg Extension', 'Pull-Up']); // unchecked rows are ignored
   assert.equal(parseTime('01:02:03'), 3723);
   assert.equal(routineFromTitle('Quick Workout: EXTRA WORKOUT'), 'extra');
 });
@@ -103,7 +104,7 @@ test('screw-on dumbbells satisfy dumbbell exercises', () => {
   assert.ok(!availableAt({ equipment: ['barbell'] }, gym));
 });
 
-import { buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
+import { addedDefaults, lastPreferGym, buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
 const gymB = { id: 'big', increment: 2.5 };
 const R = { blocks: [
   { id: 'w', label: 'Warm-up', kind: 'warmup', rounds: 2, items: [{ slotId: 'rot', repMin: 12, repMax: 12 }] },
@@ -147,4 +148,16 @@ test('routineChanges + toSession + stats', () => {
   const s = toSession(w, 1000 + 45 * 60000);
   assert.equal(s.entries.length, 1);
   assert.deepEqual(stats(s), { sets: 1, volume: 200, minutes: 45 });
+});
+
+test('added exercise copies last values (set count, weight, reps), falling back to another gym', () => {
+  const h2 = [{ gymId: 'office', start: 9, end: 10, entries: [{ exerciseId: 'curl', sets: [{ w: 14, r: 10, done: true }, { w: 14, r: 9, done: true }, { w: 14, r: 8, done: true }, { w: 14, r: 7, done: true }] }] }];
+  const l = lastPreferGym(h2, 'curl', 'big');
+  assert.ok(l.elsewhere);
+  const d = addedDefaults(l);
+  assert.equal(d.sets.length, 4);
+  assert.deepEqual(d.sets.map((s) => [s.w, s.r]), [[14, 10], [14, 9], [14, 8], [14, 7]]);
+  const none = addedDefaults(null);
+  assert.equal(none.sets.length, 3);
+  assert.deepEqual([none.repMin, none.repMax], [8, 12]);
 });

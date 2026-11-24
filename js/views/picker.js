@@ -53,6 +53,7 @@ export function editExercise(ex, presetName = '') {
       const alias = h('input', { class: 'search', value: e.aliases.join(', '), placeholder: 'Spanish aliases, comma separated', style: 'margin:0 0 10px' });
       const muscle = h('select', { class: 'search', style: 'margin:0 0 10px' }, h('option', { value: '' }, 'Muscle group'), ...MUSCLES.map((m) => h('option', { value: m, selected: e.muscle === m }, m)));
       const type = h('select', { class: 'search', style: 'margin:0 0 10px' }, ...TYPES.map(([v, l]) => h('option', { value: v, selected: e.type === v }, l)));
+      const notes = h('textarea', { class: 'search', rows: 3, placeholder: 'How to do it / your notes', style: 'height:auto;padding:12px 16px;margin:0 0 10px;resize:none' }, e.notes || '');
       const eq = h('div', { class: 'chips', style: 'margin-bottom:16px' }, ...EQUIPMENT.map(([k, l]) => {
         const b = h('button', { class: `chip ${e.equipment.includes(k) ? 'ac' : ''}`, onclick: () => { const i = e.equipment.indexOf(k); i < 0 ? e.equipment.push(k) : e.equipment.splice(i, 1); b.classList.toggle('ac'); } }, l);
         return b;
@@ -63,10 +64,10 @@ export function editExercise(ex, presetName = '') {
         const all = await db.all('exercises');
         let id = e.id;
         if (!id) { id = slug(n) || `ex-${Date.now()}`; while (all.some((x) => x.id === id)) id += '-2'; }
-        await db.put('exercises', { ...e, id, name: n, aliases: alias.value.split(',').map((x) => x.trim()).filter(Boolean), muscle: muscle.value, type: type.value });
+        await db.put('exercises', { ...e, id, name: n, aliases: alias.value.split(',').map((x) => x.trim()).filter(Boolean), muscle: muscle.value, type: type.value, notes: notes.value.trim() });
         done = true; close(); resolve(id);
       };
-      return [h('h3', {}, ex ? 'Edit exercise' : 'New exercise'), name, alias, muscle, type, h('div', { class: 'muted', style: 'font-size:13px;margin-bottom:8px' }, 'Equipment needed'), eq,
+      return [h('h3', {}, ex ? 'Edit exercise' : 'New exercise'), name, alias, muscle, type, notes, h('div', { class: 'muted', style: 'font-size:13px;margin-bottom:8px' }, 'Equipment needed'), eq,
         h('button', { class: 'btn pri block', onclick: save }, 'Save')];
     });
     new MutationObserver((_, ob) => { if (!document.querySelector('.sheet')) { ob.disconnect(); if (!done) resolve(null); } }).observe(document.getElementById('layer'), { childList: true });

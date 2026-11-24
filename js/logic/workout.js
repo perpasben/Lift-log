@@ -17,6 +17,31 @@ export function lastFor(sessions, exerciseId, gymId) {
   return null;
 }
 
+/** Last time at this gym; if never done there, the most recent time anywhere (flagged `elsewhere`). */
+export function lastPreferGym(sessions, exerciseId, gymId) {
+  const here = lastFor(sessions, exerciseId, gymId);
+  if (here) return here;
+  const any = [...sessions].sort((a, b) => b.start - a.start);
+  for (const s of any) for (const e of s.entries) {
+    if (e.exerciseId !== exerciseId) continue;
+    const sets = (e.sets || []).filter((x) => !x.warm && x.done !== false);
+    if (sets.length) return { date: s.start, sets, elsewhere: true, gymId: s.gymId };
+  }
+  return null;
+}
+
+/** Defaults for an exercise added on the fly: copy set count, weights and reps from the last time. */
+export function addedDefaults(last, { increment = 2.5, type = 'wr' } = {}) {
+  const reps = last ? last.sets.map((s) => s.r).filter((r) => r != null) : [];
+  const repMin = reps.length ? Math.min(8, ...reps) : 8;
+  const repMax = reps.length ? Math.max(12, ...reps) : 12;
+  const count = last ? Math.min(6, Math.max(1, last.sets.length)) : 3;
+  const sets = makeSets(count, { type, last, repMin, repMax, increment });
+  // when copying from another gym we copy values as-is (no progression bump)
+  if (last?.elsewhere) sets.forEach((s, i) => { const o = last.sets[Math.min(i, last.sets.length - 1)]; s.w = o.w; s.r = o.r; s.t = o.t ?? s.t; });
+  return { sets, repMin, repMax };
+}
+
 /** n fresh sets prefilled from the last session using double progression. */
 export function makeSets(n, { type = 'wr', last = null, repMin = 8, repMax = 12, increment = 2.5, warm = false } = {}) {
   const sug = last && !warm ? suggestNext(last.sets, { repMin, repMax, increment }) : null;

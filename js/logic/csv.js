@@ -47,6 +47,7 @@ export function routineFromTitle(title) {
 export function csvToSessions(rows, gymId) {
   const by = new Map();
   for (const r of rows) {
+    if (!r.checked) continue; // planned but never completed
     const k = `${r.workout}|${r.start}`;
     if (!by.has(k)) by.set(k, []);
     by.get(k).push(r);
