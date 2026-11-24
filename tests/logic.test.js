@@ -161,3 +161,36 @@ test('added exercise copies last values (set count, weight, reps), falling back 
   assert.equal(none.sets.length, 3);
   assert.deepEqual([none.repMin, none.repMax], [8, 12]);
 });
+
+import { monthGrid, dayKey, exerciseSeries, est1rm, niceRange, metricsFor } from '../js/logic/stats.js';
+test('monthGrid: Monday-first, counts sessions in month', () => {
+  const t = (y, m, d) => new Date(y, m, d, 18).getTime();
+  const sess = [{ id: 'a', start: t(2026, 10, 3), end: t(2026, 10, 3) + 45 * 60000 }, { id: 'b', start: t(2026, 10, 3) + 1000, end: t(2026, 10, 3) + 30 * 60000 }, { id: 'c', start: t(2026, 9, 30), end: t(2026, 9, 30) + 60000 }];
+  const g = monthGrid(2026, 10, sess);
+  assert.equal(g.weeks[0][0].key, '2026-10-26'); // Nov 1 2026 is a Sunday
+  assert.equal(g.weeks.length, 6);
+  assert.equal(g.count, 2);
+  assert.equal(g.minutes, 75);
+  const cell = g.weeks.flat().find((c) => c.key === dayKey(t(2026, 10, 3)));
+  assert.equal(cell.sessions.length, 2);
+  assert.equal(cell.inMonth, true);
+  assert.equal(g.weeks.flat().filter((c) => c.inMonth).length, 30);
+});
+test('exerciseSeries: per gym, per metric', () => {
+  const S = [
+    { id: '1', gymId: 'big', start: 1, entries: [{ exerciseId: 'x', sets: [{ w: 40, r: 10 }, { w: 45, r: 8 }, { w: 20, r: 12, warm: true }] }] },
+    { id: '2', gymId: 'office', start: 2, entries: [{ exerciseId: 'x', sets: [{ w: 10, r: 10 }] }] },
+    { id: '3', gymId: 'big', start: 3, entries: [{ exerciseId: 'x', sets: [{ w: 47.5, r: 8 }] }] },
+  ];
+  assert.deepEqual(exerciseSeries(S, 'x', 'big', 'top').map((p) => p.v), [45, 47.5]);
+  assert.deepEqual(exerciseSeries(S, 'x', null, 'top').map((p) => p.v), [45, 10, 47.5]);
+  assert.equal(exerciseSeries(S, 'x', 'big', 'volume')[0].v, 760);
+  assert.equal(est1rm(100, 5), 116.7);
+  assert.deepEqual(metricsFor('bw').map((m) => m[0]), ['reps', 'top']);
+});
+test('niceRange gives tidy ticks and handles flat data', () => {
+  const r = niceRange(22.5, 47.5);
+  assert.ok(r.lo <= 22.5 && r.hi >= 47.5 && r.ticks.length >= 3);
+  const f = niceRange(50, 50);
+  assert.ok(f.lo < 50 && f.hi > 50);
+});
