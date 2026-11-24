@@ -302,8 +302,6 @@ button.row:active.alt-row { background: none; }
 .home-top .brand b { font-size: 19px; letter-spacing: -.02em; }
 .hp { position: relative; isolation: isolate; border-radius: 22px; overflow: hidden; min-height: 268px; padding: 20px 18px 18px; display: flex; flex-direction: column; justify-content: flex-end; background: #131315 center / cover; border: 1px solid var(--line); }
 .hp.has-photo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(0, 0, 0, .86) 0%, rgba(0, 0, 0, .55) 52%, rgba(0, 0, 0, .1) 100%), linear-gradient(0deg, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, 0) 58%); }
-.hp-cam { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 17px; background: rgba(0, 0, 0, .45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, .14); color: #f1eeea; font-size: 13px; font-weight: 600; }
-.hp-cam svg.i { width: 18px; height: 18px; }
 .hp-e { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .72); }
 .hp-h { font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -.045em; margin: 8px 0 8px; color: #fff; }
 .hp-s { font-size: 14px; color: rgba(255, 255, 255, .78); }
