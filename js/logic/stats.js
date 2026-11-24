@@ -79,22 +79,25 @@ export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   let used = [...sessions].filter((s) => s.entries.length).sort((a, b) => b.start - a.start);
   if (range.workouts) used = used.slice(0, range.workouts);
   else used = used.filter((s) => s.start > now - range.days * 86400000 && s.start <= now);
-  const counts = {};
+  const counts = {}, last = {};
   for (const s of used) for (const e of s.entries) {
     const key = MUSCLE_KEY[exercises[e.exerciseId]?.muscle];
     if (!key) continue;
     const n = e.sets.filter((x) => !x.warm && x.done !== false).length;
-    if (n) counts[key] = (counts[key] || 0) + n;
+    if (n) { counts[key] = (counts[key] || 0) + n; last[key] = Math.max(last[key] || 0, s.start); }
   }
-  return { counts, sessions: used.length, from: used.length ? used.at(-1).start : null };
+  return { counts, last, sessions: used.length, from: used.length ? used.at(-1).start : null };
 }
 
-/** Heat color for a set count: warm grey -> orange -> amber at the top end. */
+/** Mix grey -> accent by intensity 0..1 (returns #rrggbb). */
 export function heat(count, full = 10) {
-  const hex = (c) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-  const grey = [46, 42, 39], orange = [255, 107, 31], amber = [255, 192, 138];
-  if (count <= 0) return hex(grey);
-  const u = Math.min(1, count / full);
-  return u <= 0.7 ? hex(mix(grey, orange, 0.3 + (u / 0.7) * 0.7)) : hex(mix(orange, amber, (u - 0.7) / 0.3));
+  const t = count > 0 ? 0.3 + 0.7 * Math.min(1, count / full) : 0;
+  const a = [45, 45, 51], b = [255, 107, 31];
+  return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** "today", "yesterday", "3 days ago" */
+export function ago(ms, now = Date.now()) {
+  const d = Math.floor((now - ms) / 86400000);
+  return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
 }

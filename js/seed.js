@@ -183,3 +183,24 @@ export const CIRCUITS = [
     { name: "Farmer's Walk", meters: 30 }, { name: "Farmer's Walk", meters: 30 }, { name: "Farmer's Walk", meters: 30 },
   ] },
 ];
+
+// Big gym routines, built from the last 6 months of history (24 May to 24 Nov 2026): exercises done in
+// at least ~30% of sessions of that type, in the order they were usually done, with the usual set count.
+// Rep ranges start at the 10 reps you consistently did and top out at what you have hit. [exerciseId, sets, repMin, repMax]
+export const BIG_PLAN = {
+  push: [['cable-external-shoulder-rotation', 4, 10, 12], ['bench-press', 4, 10, 12], ['bar-dip', 4, 10, 12], ['triceps-pushdown-with-bar', 4, 10, 12]],
+  pull: [['pull-up', 4, 8, 10], ['bar-hang', 3, null, null], ['hammer-curl', 4, 10, 12], ['seated-machine-row', 4, 10, 12], ['reverse-machine-fly', 4, 10, 12], ['barbell-curl', 4, 8, 10]],
+  leg: [['leg-extension', 4, 10, 12], ['seated-calf-raise', 4, 10, 12], ['trap-bar-deadlift-with-low-handles', 4, 10, 12]],
+};
+export const bigSlotId = (exerciseId) => `x-${exerciseId}`;
+export function bigVariant(routineId) {
+  return (BIG_PLAN[routineId] || []).map(([ex, sets, repMin, repMax], i) => ({ id: `b${i + 1}`, label: String(i + 1), kind: 'superset', rounds: sets, restSec: null, items: [{ slotId: bigSlotId(ex), repMin, repMax }] }));
+}
+export function bigSlots() {
+  const ids = [...new Set(Object.values(BIG_PLAN).flat().map((x) => x[0]))];
+  return ids.map((id) => ({ id: bigSlotId(id), name: CATALOG.find((e) => e.id === id).name }));
+}
+export function bigAssignments() {
+  const ids = [...new Set(Object.values(BIG_PLAN).flat().map((x) => x[0]))];
+  return ids.map((id) => ({ id: akey(bigSlotId(id), 'big'), slotId: bigSlotId(id), gymId: 'big', exerciseId: id }));
+}

@@ -9,6 +9,7 @@ import { settingsView } from './views/settings.js';
 import { loadActive, getActive } from './active.js';
 import { workoutView } from './views/workout.js';
 import { initRest } from './rest.js';
+import { migrate } from './migrate.js';
 
 const TABS = [['train', 'Train', trainView], ['history', 'History', historyView], ['library', 'Library', libraryView], ['settings', 'Settings', settingsView]];
 
@@ -63,6 +64,7 @@ async function render() {
 
 async function boot() {
   await seed();
+  await migrate();
   await loadActive();
   if (getActive()) stacks.train.push({ view: workoutView, scroll: 0 }); // reopen the running workout
   render();

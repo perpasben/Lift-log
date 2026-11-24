@@ -4,9 +4,24 @@ import { nextRoutine, pendingFor, ROTATION } from '../logic/carryover.js';
 import { buildWorkout } from '../logic/workout.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
-import { rcOf } from '../theme.js';
 import { extrasView } from './extras.js';
 import { muscleMapSection } from './musclemap.js';
+
+const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
+// Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
+function weekDial(done, goal = 4) {
+  const ns = 'http://www.w3.org/2000/svg', R = 30, C = 40, gap = 16, seg = 360 / goal - gap;
+  const pt = (deg) => { const a = ((deg - 90) * Math.PI) / 180; return [C + R * Math.cos(a), C + R * Math.sin(a)]; };
+  let paths = '';
+  for (let i = 0; i < goal; i++) {
+    const a0 = i * (360 / goal) + gap / 2, a1 = a0 + seg;
+    const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
+    paths += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${i < done ? '#ff6b1f' : '#2a2724'}" stroke-width="7"/>`;
+  }
+  const el = h('div', { class: 'dial', role: 'img', 'aria-label': `${done} of ${goal} workouts in the last 7 days` });
+  el.innerHTML = `<svg viewBox="0 0 80 80" width="84" height="84">${paths}<text x="40" y="46" text-anchor="middle" class="dial-n">${done}</text></svg><span>last 7 days<br>goal ${goal}</span>`;
+  return el;
+}
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 
@@ -52,22 +67,24 @@ export async function trainView({ nav }) {
   const others = ROTATION.filter((r) => r !== next);
 
   const hero = active
-    ? h('div', { class: 'hero', style: `--rc:${rcOf(active.routineId)}` },
+    ? h('div', { class: 'hero' },
       h('div', { class: 'kick' }, 'In progress'),
       h('div', { class: 'big' }, NAMES[active.routineId] || 'Workout'),
-      h('div', { class: 'chips' }, h('span', { class: 'chip sand' }, gyms.find((g) => g.id === active.gymId)?.name), h('span', { class: 'chip ac' }, `started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)),
+      h('div', { class: 'chips' }, h('span', { class: 'chip' }, gyms.find((g) => g.id === active.gymId)?.name), h('span', { class: 'chip ac' }, `started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)),
       h('button', { class: 'btn pri block', onclick: () => nav.push(workoutView) }, 'Resume workout'))
-    : h('div', { class: 'hero', style: `--rc:${rcOf(next)}` },
+    : h('div', { class: 'hero' },
+      weekDial(sessions.filter((x) => x.entries.length && x.start > Date.now() - 7 * 86400000).length),
       h('div', { class: 'kick' }, 'Up next'),
       h('div', { class: 'big' }, routine.name),
-      h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${items} exercises`), h('span', { class: 'chip sand' }, gym?.name), carried ? h('span', { class: 'chip ac' }, `${carried} carried over`) : null),
+      h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${items} exercises`), h('span', { class: 'chip' }, gym?.name), carried ? h('span', { class: 'chip ac' }, `${carried} carried over`) : null),
       h('button', { class: 'btn pri block', onclick: () => start(next, nav) }, 'Start workout'));
 
   const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
-  return h('div', { style: 'padding-top:6px' }, hero,
-    h('h2', {}, 'Other'),
-    h('div', { class: 'card' },
-      ...(active ? [] : others.map((r) => row(`Do ${NAMES[r]} instead`, null, () => start(r, nav)))),
+  return h('div', { style: 'padding-top:18px' }, hero,
+    active ? null : h('h2', {}, 'Or instead'),
+    active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-dot' }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
+    h('h2', {}, 'Extras'),
+    h('div', { class: 'card plain' },
       row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
       row('Extras', 'Mobility, abs, farmer’s walk', () => nav.push(extrasView))),
     h('p', { class: 'muted', style: 'margin-top:22px;font-size:14px' }, sessions.length ? `${sessions.length} workouts logged.` : 'No workouts yet. Import your StrengthLog history in Settings.'),

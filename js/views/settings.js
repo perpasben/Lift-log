@@ -1,6 +1,7 @@
 import * as db from '../db.js';
 import { VERSION, BUILD } from '../version.js';
 import { h, topbar, toast, confirmSheet, sheet } from '../ui.js';
+import { migrate } from '../migrate.js';
 import { parseCsv, csvToSessions, slug } from '../logic/csv.js';
 
 const pickFile = (accept) => new Promise((res) => {
@@ -51,7 +52,7 @@ async function importBackup(nav) {
   let obj;
   try { obj = JSON.parse(await f.text()); } catch { return toast('That file is not valid JSON'); }
   if (!(await confirmSheet({ title: 'Replace all data?', body: 'Everything currently on this device is replaced by the backup.', ok: 'Replace', danger: true }))) return;
-  try { await db.importAll(obj); toast('Backup restored'); nav.refresh(); } catch (e) { toast(e.message); }
+  try { await db.importAll(obj); await migrate(); toast('Backup restored'); nav.refresh(); } catch (e) { toast(e.message); }
 }
 
 async function importCsv(nav) {
@@ -91,7 +92,6 @@ export async function settingsView({ nav }) {
   const row = (t, d, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, t), d ? h('div', { class: 'd' }, d) : null));
 
   return h('div', {}, ...topbar('Settings', nav),
-    h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('div', {}, h('b', {}, 'LiftLog'), h('span', {}, 'Personal gym tracker'))),
     h('h2', {}, 'Training'),
     h('div', { class: 'card' }, h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Default rest'),
       h('div', { class: 'step' }, h('button', { 'aria-label': 'Less', onclick: bump(-15) }, '−'), rest, h('button', { 'aria-label': 'More', onclick: bump(15) }, '+')))),

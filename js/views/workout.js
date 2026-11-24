@@ -6,7 +6,7 @@ import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
 import { lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
-import { rcOf } from '../theme.js';
+import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
 
@@ -24,7 +24,6 @@ export function fmtSet(type, s) {
 export async function workoutView({ nav }) {
   const w = getActive();
   const root = h('div');
-  if (w) root.style.setProperty('--rc', rcOf(w.routineId));
   if (!w) { root.append(h('div', { class: 'empty' }, 'No workout in progress.')); return root; }
   const [gym, exList, sessions, settings, allGyms] = await Promise.all([db.get('gyms', w.gymId), db.all('exercises'), db.all('sessions'), db.kvGet('settings', { restSec: 90 }), db.all('gyms')]);
   const ctx = { gymNames: Object.fromEntries(allGyms.map((g) => [g.id, g.name])), w, gym, exs: Object.fromEntries(exList.map((x) => [x.id, x])), sessions, settings, nav };
@@ -72,8 +71,8 @@ function blockEl(ctx, b) {
     const label = b.kind === 'carry' ? h('div', { class: 'blk-h' }, 'Carried over from last time')
       : b.kind === 'added' ? h('div', { class: 'blk-h' }, 'Added today')
         : b.kind === 'warmup' ? h('div', { class: 'blk-h' }, 'Warm-up')
-          : h('div', { class: 'blk-h' }, h('b', {}, b.label), es.length > 1 ? `Superset · ${b.rounds} rounds` : `${b.rounds} rounds`);
-    el.replaceChildren(label, ...es.map((e) => entryEl(ctx, e, paint)));
+          : null;
+    el.replaceChildren(...[label, ...es.map((e) => entryEl(ctx, e, paint))].filter(Boolean));
   };
   paint();
   return el;
@@ -95,7 +94,9 @@ function entryEl(ctx, e, repaint) {
     const id = await pickExercise({ gym, title });
     if (!id) return;
     await refreshExs(ctx);
-    ctx.exs[id] ||= {};
+    swapTo(id);
+  };
+  const swapTo = (id) => {
     e.exerciseId = id;
     const t = ctx.exs[id]?.type || 'wr';
     const last = lastPreferGym(sessions, id, gym.id);
@@ -112,14 +113,8 @@ function entryEl(ctx, e, repaint) {
     return card;
   }
 
-  const last = lastPreferGym(sessions, e.exerciseId, gym.id);
-  const sug = suggestionFor(last, { repMin: e.repMin, repMax: e.repMax, increment: gym.increment });
-  const meta = h('div', { class: 'meta' },
-    last ? `Last${last.elsewhere ? ` at ${ctx.gymNames[last.gymId] || 'another gym'}` : ''} ${new Date(last.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}: ${last.sets.slice(0, 5).map((s) => fmtSet(type, s)).join(' · ')}` : 'First time here',
-    sug?.bumped && !last.elsewhere ? h('span', { class: 'up' }, ` · ↑ try ${kg(sug.weight)}`) : null);
-
-  card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId), meta,
-    e.repMax ? h('div', { class: 'meta' }, e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`) : null),
+  card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId),
+    h('div', { class: 'meta' }, `${e.sets.filter((x) => !x.warm).length} sets${e.repMax ? ` · ${e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`}` : ''}`)),
   h('button', { class: 'more', 'aria-label': 'Exercise options', html: icon('more'), onclick: () => menu() })));
 
   let work = 0;
@@ -150,13 +145,17 @@ function entryEl(ctx, e, repaint) {
     sheet((close) => {
       const item = (label, fn, danger) => h('button', { class: 'row', style: danger ? 'color:var(--bad)' : '', onclick: () => { close(); fn(); } }, h('div', { class: 'grow t' }, label));
       const how = howTo(ex);
+      const alts = alternativesFor(e.exerciseId, ctx.exs, gym);
       return [h('h3', {}, ex?.name || 'Exercise'),
         h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.'),
+        alts.length ? h('div', { class: 'alt-h' }, `Swap ${ex?.name} for`) : null,
+        alts.length ? h('div', { class: 'card' }, ...alts.map((a) => h('button', { class: 'row', onclick: () => { close(); swapTo(a.id); } },
+          h('div', { class: 'grow t' }, ctx.exs[a.id].name), h('span', { class: 'chip' }, KIND_LABEL[a.kind])))) : null,
         h('div', { class: 'card', style: 'margin-top:12px' },
-        item('Swap for another exercise', () => choose('Swap exercise')),
+        item('Other exercise\u2026', () => choose('Swap exercise')),
         item('Add warm-up set', () => { e.sets.unshift({ w: null, r: e.repMin, t: null, warm: true, done: false }); ctx.persist(); repaint(); }),
         e.sets.length > 1 ? item('Remove last set', () => { e.sets.pop(); ctx.persist(); repaint(); }) : null,
-        item('Skip this exercise', () => { e.skipped = true; ctx.persist(); repaint(); }, true))];
+        item('Skip this exercise', () => { e.skipped = true; ctx.persist(); repaint(); }, true))].filter(Boolean);
     });
   }
   return card;
@@ -284,7 +283,7 @@ async function applyRoutineChanges(w, gym, ch, exs) {
     const slotId = `slot-${a.exerciseId}`;
     await db.put('slots', { id: slotId, name: exs[a.exerciseId]?.name || a.exerciseId });
     await db.put('assignments', { id: akey(slotId, gym.id), slotId, gymId: gym.id, exerciseId: a.exerciseId });
-    routine.blocks.push({ id: uid('rb'), label: '+', kind: 'superset', rounds: a.sets, restSec: null, items: [{ slotId, repMin: a.repMin, repMax: a.repMax }] });
+    (routine.gymBlocks?.[gym.id] || routine.blocks).push({ id: uid('rb'), label: '+', kind: 'superset', rounds: a.sets, restSec: null, items: [{ slotId, repMin: a.repMin, repMax: a.repMax }] });
   }
   await db.put('routines', routine);
 }

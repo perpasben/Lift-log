@@ -63,7 +63,9 @@ async function gymView(id, nav) {
       h('button', { 'aria-label': 'Increase', onclick: async () => { g[key] = +(((g[key] ?? fallback) + step)).toFixed(2); await save(); nav.refresh(); } }, '+')));
   out.append(h('h2', {}, 'Weights'), h('div', { class: 'card' }, stepper('Smallest jump', 'increment', 0.5, 2.5), stepper('Heaviest dumbbell', 'maxDumbbell', 2.5, 20)));
   if (g.note) out.append(h('p', { class: 'muted', style: 'font-size:14px;margin-top:10px' }, g.note));
-  const [slotsRaw, asg, exs] = await Promise.all([db.all('slots'), db.all('assignments'), db.all('exercises')]);
+  const [slotsAll, asg, exs, routinesAll] = await Promise.all([db.all('slots'), db.all('assignments'), db.all('exercises'), db.all('routines')]);
+  const usedSlots = new Set(routinesAll.flatMap((r) => (r.gymBlocks?.[g.id] || r.blocks).flatMap((b) => b.items.map((i) => i.slotId))));
+  const slotsRaw = slotsAll.filter((x) => usedSlots.has(x.id));
   const { SLOTS } = await import('../seed.js');
   const order = SLOTS.map((x) => x.id);
   const slots = [...slotsRaw].sort((a, b) => (order.indexOf(a.id) + 1 || 999) - (order.indexOf(b.id) + 1 || 999));

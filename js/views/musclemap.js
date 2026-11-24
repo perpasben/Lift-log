@@ -39,7 +39,7 @@ function figure(regions, counts, x0) {
     const a = `class="mm" data-m="${key}" fill="${fill}"`;
     return `<path ${a} d="${d}"/><path ${a} d="${d}" ${mirror}/>`;
   }).join('');
-  const base = `<g fill="#1f1c1a">${Object.values(BASE).join('')}${SIDE_BASE.map((p) => `<g>${p}</g><g ${mirror}>${p}</g>`).join('')}</g>`;
+  const base = `<g fill="#232329">${Object.values(BASE).join('')}${SIDE_BASE.map((p) => `<g>${p}</g><g ${mirror}>${p}</g>`).join('')}</g>`;
   return `<g transform="translate(${x0} 0)">${base}${paths}</g>`;
 }
 
@@ -59,9 +59,9 @@ export async function muscleMapSection() {
     const max = rows[0]?.[1] || 1;
     box.replaceChildren(
       h('div', { class: 'chips', style: 'margin:0 0 10px' }, ...RANGES.map(([l], i) => h('button', { class: `chip ${i === rangeIdx ? 'ac' : ''}`, 'aria-pressed': String(i === rangeIdx), onclick: async () => { rangeIdx = i; await db.kvSet('settings', { ...(await db.kvGet('settings', {})), mapRange: i }); paint(); } }, l))),
-      h('div', { class: 'card', style: 'padding:14px 10px 8px' }, svg, h('div', { class: 'mm-lab' }, h('span', {}, 'Front'), h('span', {}, 'Back')), readout,
+      h('div', { class: 'mm-fig' }, svg, h('div', { class: 'mm-lab' }, h('span', {}, 'Front'), h('span', {}, 'Back')), readout,
         h('div', { class: 'mm-leg' }, h('span', {}, '0'), h('i', {}), h('span', {}, '10+ sets'))),
-      rows.length ? h('div', { class: 'card', style: 'margin-top:10px' }, ...rows.map(([k, c]) => h('div', { class: 'row', style: 'min-height:44px;padding:10px 16px' }, h('div', { class: 't', style: 'width:96px' }, MUSCLE_LABEL[k]), h('div', { class: 'mm-bar' }, h('i', { style: `width:${Math.max(6, (c / max) * 100)}%` })), h('div', { class: 'muted mono', style: 'width:52px;text-align:right' }, `${c} sets`)))) : null);
+      rows.length ? h('div', { class: 'card plain', style: 'margin-top:10px' }, ...rows.map(([k, c]) => h('div', { class: 'row', style: 'min-height:44px;padding:10px 2px' }, h('div', { class: 't', style: 'width:96px' }, MUSCLE_LABEL[k]), h('div', { class: 'mm-bar' }, h('i', { style: `width:${Math.max(6, (c / max) * 100)}%` })), h('div', { class: 'muted mono', style: 'width:52px;text-align:right' }, `${c} sets`)))) : null);
   };
   paint();
   return h('div', {}, h('h2', {}, 'Muscles trained'), box);

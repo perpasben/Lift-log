@@ -46,10 +46,10 @@ export function addedDefaults(last, { increment = 2.5, type = 'wr' } = {}) {
 export function makeSets(n, { type = 'wr', last = null, repMin = 8, repMax = 12, increment = 2.5, warm = false } = {}) {
   const sug = last && !warm ? suggestNext(last.sets, { repMin, repMax, increment }) : null;
   const lastW = last?.sets?.length ? last.sets[last.sets.length - 1] : null;
-  return Array.from({ length: n }, () => ({
+  return Array.from({ length: n }, (_, i) => ({
     w: type === 'rr' || type === 't' ? 0 : warm ? (lastW ? Math.round((lastW.w * 0.5) / increment) * increment : null) : (sug?.weight ?? null),
     r: type === 't' ? null : (sug?.reps ?? repMin),
-    t: type === 't' ? (lastW?.t ?? 30) : null,
+    t: type === 't' ? (last?.sets?.[i]?.t ?? lastW?.t ?? 30) : null,
     warm, done: false,
   }));
 }
@@ -73,7 +73,7 @@ export function buildWorkout({ routineId, routine, gym, assignments, exercises, 
     const b = { id: uid('b'), label: 'Carried over', kind: 'carry', rounds: p.sets };
     e.blockId = b.id; add(b, e);
   }
-  for (const rb of routine?.blocks || []) {
+  for (const rb of routine?.gymBlocks?.[gym.id] || routine?.blocks || []) {
     const b = { id: uid('b'), routineBlockId: rb.id, label: rb.label, kind: rb.kind, rounds: rb.rounds, entryIds: [] };
     for (const it of rb.items) {
       const exId = resolveSlot(assignments, it.slotId, gym.id);
