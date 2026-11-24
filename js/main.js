@@ -6,6 +6,8 @@ import { trainView } from './views/train.js';
 import { historyView } from './views/history.js';
 import { libraryView } from './views/library.js';
 import { settingsView } from './views/settings.js';
+import { loadActive } from './active.js';
+import { initRest } from './rest.js';
 
 const TABS = [['train', 'Train', trainView], ['history', 'History', historyView], ['library', 'Library', libraryView], ['settings', 'Settings', settingsView]];
 
@@ -15,6 +17,7 @@ export const nav = {
   push(view) { state.stack.push(view); render(); },
   back() { if (state.stack.length > 1) { state.stack.pop(); render(); } },
   refresh: () => render(),
+  tab: (id) => selectTab(id),
 };
 
 async function seed() {
@@ -46,7 +49,9 @@ async function render() {
 
 async function boot() {
   await seed();
+  await loadActive();
   selectTab('train');
+  initRest();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   }

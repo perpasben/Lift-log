@@ -102,3 +102,49 @@ test('screw-on dumbbells satisfy dumbbell exercises', () => {
   assert.ok(availableAt({ equipment: ['dumbbell'] }, gym));
   assert.ok(!availableAt({ equipment: ['barbell'] }, gym));
 });
+
+import { buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
+const gymB = { id: 'big', increment: 2.5 };
+const R = { blocks: [
+  { id: 'w', label: 'Warm-up', kind: 'warmup', rounds: 2, items: [{ slotId: 'rot', repMin: 12, repMax: 12 }] },
+  { id: 'a', label: 'A', kind: 'superset', rounds: 3, items: [{ slotId: 'press', repMin: 10, repMax: 12 }, { slotId: 'fly', repMin: 12, repMax: 15 }] },
+] };
+const exs = { bench: { type: 'wr' }, deck: { type: 'wr' }, rot: { type: 'wr' } };
+const A = { 'press|big': 'bench', 'fly|big': 'deck', 'rot|big': 'rot' };
+const hist = [{ gymId: 'big', start: 5, end: 9, entries: [{ exerciseId: 'bench', sets: [{ w: 50, r: 12, done: true }, { w: 50, r: 12, done: true }] }] }];
+
+test('lastFor is per gym and ignores warm-ups', () => {
+  assert.equal(lastFor(hist, 'bench', 'big').sets.length, 2);
+  assert.equal(lastFor(hist, 'bench', 'office'), null);
+});
+test('buildWorkout: pending first, suggestion bump, missing slot flagged', () => {
+  const pending = [{ id: 'p1', target: 'push', slotId: 'press', exerciseId: 'deck', sets: 2, repMin: 12, repMax: 15, createdAt: 1 }];
+  const w = buildWorkout({ routineId: 'push', routine: R, gym: gymB, assignments: { ...A, 'fly|big': undefined }, exercises: exs, sessions: hist, pending, now: 100 });
+  assert.equal(w.blocks[0].kind, 'carry');
+  assert.equal(w.entries[0].sets.length, 2);
+  const press = w.entries.find((e) => e.slotId === 'press' && e.blockId !== w.blocks[0].id);
+  assert.equal(press.sets.length, 3);
+  assert.equal(press.sets[0].w, 52.5); // 12 reps on all sets last time -> +2.5
+  assert.equal(w.entries.find((e) => e.slotId === 'fly' && e.sets.length === 3).exerciseId ?? null, null);
+  assert.ok(w.entries.find((e) => e.slotId === 'rot').sets.every((s) => s.warm));
+});
+test('restDue: only when the whole superset round is checked', () => {
+  const w = buildWorkout({ routineId: 'push', routine: R, gym: gymB, assignments: A, exercises: exs, sessions: [], pending: [], now: 1 });
+  const [p, f] = w.entries.filter((e) => e.slotId === 'press' || e.slotId === 'fly');
+  p.sets[0].done = true;
+  assert.equal(restDue(w, p, 0), false);
+  f.sets[0].done = true;
+  assert.equal(restDue(w, f, 0), true);
+  f.skipped = true; p.sets[1].done = true;
+  assert.equal(restDue(w, p, 1), true);
+});
+test('routineChanges + toSession + stats', () => {
+  const w = buildWorkout({ routineId: 'push', routine: R, gym: gymB, assignments: A, exercises: exs, sessions: [], pending: [], now: 1000 });
+  const press = w.entries.find((e) => e.slotId === 'press');
+  press.exerciseId = 'deck'; press.sets[0] = { ...press.sets[0], w: 20, r: 10, done: true };
+  const ch = routineChanges(w);
+  assert.deepEqual(ch.swaps.map((s) => [s.slotId, s.from, s.to]), [['press', 'bench', 'deck']]);
+  const s = toSession(w, 1000 + 45 * 60000);
+  assert.equal(s.entries.length, 1);
+  assert.deepEqual(stats(s), { sets: 1, volume: 200, minutes: 45 });
+});
