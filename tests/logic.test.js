@@ -96,3 +96,9 @@ test('csv: quoted commas, sessions, time, routine guess', () => {
   assert.equal(parseTime('01:02:03'), 3723);
   assert.equal(routineFromTitle('Quick Workout: EXTRA WORKOUT'), 'extra');
 });
+
+test('screw-on dumbbells satisfy dumbbell exercises', () => {
+  const gym = { equipment: [{ key: 'dumbbell-screw', on: true }, { key: 'dumbbell', on: false }] };
+  assert.ok(availableAt({ equipment: ['dumbbell'] }, gym));
+  assert.ok(!availableAt({ equipment: ['barbell'] }, gym));
+});

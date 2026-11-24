@@ -20,6 +20,8 @@ export function availableAt(exercise, gym) {
   const need = exercise.equipment || [];
   if (!need.length) return true;
   const have = new Set((gym.equipment || []).filter((e) => e.on).map((e) => e.key));
+  // screw-on dumbbells still count as dumbbells
+  if (have.has('dumbbell-screw')) have.add('dumbbell');
   return need.every((k) => have.has(k));
 }
 
