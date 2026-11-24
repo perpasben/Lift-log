@@ -114,7 +114,7 @@ function entryEl(ctx, e, repaint) {
   }
 
   card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId),
-    h('div', { class: 'meta' }, `${e.sets.filter((x) => !x.warm).length} sets${e.repMax ? ` · ${e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`}` : ''}`)),
+    h('div', { class: 'meta' }, `${e.sets.filter((x) => !x.warm).length || e.sets.length} sets${e.repMax ? ` · ${e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`}` : ''}`)),
   h('button', { class: 'more', 'aria-label': 'Exercise options', html: icon('more'), onclick: () => menu() })));
 
   let work = 0;

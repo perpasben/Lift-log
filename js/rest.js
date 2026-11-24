@@ -3,19 +3,19 @@ import { h } from './ui.js';
 import { getActive, saveActive } from './active.js';
 import { startTimer, remaining, addSeconds, fmt } from './logic/timer.js';
 
-let pill, label, bar, timerId, actBar, actName, actTime, actGo, hooks = {};
+let pill, label, bar, timerId, actBar, actName, actTime, hooks = {};
 const LINGER_MS = 4000;
 
 const ROUTINE_NAME = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60; return hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`; };
 
-/** hooks: { isWorkoutOpen(): bool, openWorkout(): void } supplied by the navigation layer. */
+/** hooks: { isOtherTab(): bool, openWorkout(): void } supplied by the navigation layer. */
 export function initRest(h2 = {}) {
   hooks = h2;
   actName = h('b', {}, '');
   actTime = h('span', { class: 'num' }, '');
-  actBar = h('button', { class: 'actbar', hidden: true, onclick: () => (hooks.isWorkoutOpen?.() ? hooks.nextSet?.() : hooks.openWorkout?.()) },
-    h('span', { class: 'act-dot' }), h('span', { class: 'act-t' }, h('small', {}, 'Active workout'), h('span', {}, actName, ' \u00b7 ', actTime)), actGo = h('span', { class: 'act-go' }, 'Resume'));
+  actBar = h('button', { class: 'actbar', hidden: true, onclick: () => hooks.openWorkout?.() },
+    h('span', { class: 'act-dot' }), h('span', { class: 'act-t' }, h('small', {}, 'Active workout'), h('span', {}, actName, ' \u00b7 ', actTime)), h('span', { class: 'act-go' }, 'Resume'));
   document.getElementById('app').insertBefore(actBar, document.getElementById('tabs'));
   label = h('span', { class: 'rest-t num' });
   bar = h('div', { class: 'rest-bar' });
@@ -70,11 +70,9 @@ function tick() {
     }
   }
   pill.hidden = !restShown;
-  // no rest timer running: show the active-workout bar (inside the workout it jumps to the next set)
-  const showAct = !!a && !restShown;
+  // no rest timer running: show the active-workout bar, but only outside the Train tab (Train already shows the workout)
+  const showAct = !!a && !restShown && !!hooks.isOtherTab?.();
   actBar.hidden = !showAct;
   if (showAct) {
-    const inside = !!hooks.isWorkoutOpen?.();
-    actGo.textContent = inside ? 'Next set' : 'Resume';
-    actBar.setAttribute('aria-label', inside ? 'Go to the next unfinished set' : 'Return to your active workout'); actName.textContent = ROUTINE_NAME[a.routineId] || 'Workout'; actTime.textContent = clock(Date.now() - a.start); }
+    actBar.setAttribute('aria-label', 'Return to your active workout'); actName.textContent = ROUTINE_NAME[a.routineId] || 'Workout'; actTime.textContent = clock(Date.now() - a.start); }
 }
