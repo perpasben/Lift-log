@@ -276,13 +276,16 @@ test('lastTimeNote: first planned lift with history, double progression hint', (
   assert.equal(lastTimeNote(S2, [{ id: 'a' }], 'office', ex), null);
 });
 
-test('personalRecord: needs history, compares weight then reps, ignores warm-ups and other gyms', () => {
-  const mk = (gym, w, r) => ({ gymId: gym, start: 1, entries: [{ exerciseId: 'b', sets: [{ w, r, done: true }] }] });
-  const hist = [mk('big', 50, 10), mk('big', 55, 8), mk('big', 52.5, 10)];
-  assert.equal(personalRecord([hist[0]], 'b', 'big', [{ w: 99, r: 5, done: true }]), null); // too little history
-  assert.deepEqual(personalRecord(hist, 'b', 'big', [{ w: 57.5, r: 6, done: true }]), { w: 57.5, r: 6 });
-  assert.equal(personalRecord(hist, 'b', 'big', [{ w: 55, r: 8, done: true }]), null); // equal is not a record
-  assert.deepEqual(personalRecord(hist, 'b', 'big', [{ w: 55, r: 9, done: true }]), { w: 55, r: 9 }); // same weight, more reps
-  assert.equal(personalRecord(hist, 'b', 'big', [{ w: 80, r: 5, done: true, warm: true }, { w: 80, r: 5, done: false }]), null);
-  assert.equal(personalRecord([...hist, mk('office', 90, 5)], 'b', 'big', [{ w: 60, r: 1, done: true }])?.w, 60);
+test('personalRecord: only when the whole exercise is completed at a heavier weight', () => {
+  const mk = (gym, w, r, n = 4) => ({ gymId: gym, start: 1, entries: [{ exerciseId: 'b', sets: Array.from({ length: n }, () => ({ w, r, done: true })) }] });
+  const hist = [mk('big', 50, 10), mk('big', 52.5, 8), mk('big', 52.5, 10)];
+  const day = (w, r, n = 4, done = n) => Array.from({ length: n }, (_, i) => ({ w, r, done: i < done }));
+  assert.equal(personalRecord([hist[0]], 'b', 'big', day(99, 5)), null); // too little history
+  assert.deepEqual(personalRecord(hist, 'b', 'big', day(55, 8)), { w: 55, r: 8 });
+  assert.equal(personalRecord(hist, 'b', 'big', day(55, 8, 4, 3)), null); // one set still to do: not completed yet
+  assert.equal(personalRecord(hist, 'b', 'big', [{ w: 70, r: 5, done: true }, ...day(50, 8, 3)]), null); // one heavy set is not enough
+  assert.equal(personalRecord(hist, 'b', 'big', day(52.5, 10)), null); // equal is not a record
+  assert.deepEqual(personalRecord(hist, 'b', 'big', day(52.5, 11)), { w: 52.5, r: 11 }); // same weight, more reps
+  assert.equal(personalRecord(hist, 'b', 'big', day(80, 5, 2)), null); // fewer than 3 sets
+  assert.equal(personalRecord([...hist, mk('office', 90, 5)], 'b', 'big', day(60, 5))?.w, 60); // other gyms ignored
 });

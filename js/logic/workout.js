@@ -127,24 +127,28 @@ export function stats(session) {
 export const pendingAfter = (w) => unfinished(w);
 
 /**
- * A live "new personal record": today's best done set beats the heaviest set ever logged for this lift at this gym.
- * Needs at least 3 earlier workouts so the first sessions are not all records. Returns {w, r} or null.
+ * A "new personal record": you COMPLETED the exercise (every working set done, at least 3 sets) and the lightest
+ * of those sets is heavier than the weight you ever completed it with before at this gym (or the same weight with
+ * more reps). One heavy set is not enough. Needs 3 earlier completed workouts so the first sessions are not all
+ * records. Returns {w, r} (weight and fewest reps across the sets) or null.
  */
 export function personalRecord(sessions, exerciseId, gymId, sets) {
+  const MIN_SETS = 3;
+  const completion = (ws) => ({ w: Math.min(...ws.map((x) => x.w)), r: Math.min(...ws.map((x) => x.r || 0)) });
+  const better = (a, b) => !b || a.w > b.w || (a.w === b.w && a.r > b.r);
   let best = null, n = 0;
   for (const s of sessions) {
     if (s.gymId !== gymId) continue;
     const e = s.entries.find((x) => x.exerciseId === exerciseId);
     const ws = e?.sets.filter((x) => !x.warm && x.done !== false && (x.w || 0) > 0);
-    if (!ws?.length) continue;
+    if (!ws || ws.length < MIN_SETS) continue;
     n++;
-    for (const x of ws) if (!best || x.w > best.w || (x.w === best.w && (x.r || 0) > best.r)) best = { w: x.w, r: x.r || 0 };
+    const c = completion(ws);
+    if (better(c, best)) best = c;
   }
   if (!best || n < 3) return null;
-  let cand = null;
-  for (const x of sets) {
-    if (!x.done || x.warm || !((x.w || 0) > 0)) continue;
-    if (!cand || x.w > cand.w || (x.w === cand.w && (x.r || 0) > cand.r)) cand = { w: x.w, r: x.r || 0 };
-  }
-  return cand && (cand.w > best.w || (cand.w === best.w && cand.r > best.r)) ? cand : null;
+  const work = sets.filter((x) => !x.warm);
+  if (work.length < MIN_SETS || !work.every((x) => x.done && (x.w || 0) > 0)) return null;
+  const cand = completion(work);
+  return better(cand, best) ? cand : null;
 }
