@@ -8,7 +8,7 @@ import { libraryView } from './views/library.js';
 import { settingsView } from './views/settings.js';
 import { loadActive, getActive } from './active.js';
 import { workoutView } from './views/workout.js';
-import { initRest } from './rest.js';
+import { initRest, refreshRest } from './rest.js';
 import { migrate } from './migrate.js';
 
 const TABS = [['train', 'Train', trainView], ['history', 'History', historyView], ['library', 'Library', libraryView], ['settings', 'Settings', settingsView]];
@@ -59,6 +59,7 @@ async function render() {
   view.replaceChildren(el);
   view.scrollTop = entry.scroll;
   const tabs = document.getElementById('tabs');
+  refreshRest();
   tabs.replaceChildren(...TABS.map(([id, label]) => h('button', { 'aria-current': String(id === state.tab), onclick: () => selectTab(id), html: `${icon(id)}<span>${label}</span>` })));
 }
 
@@ -68,7 +69,13 @@ async function boot() {
   await loadActive();
   if (getActive()) stacks.train.push({ view: workoutView, scroll: 0 }); // reopen the running workout
   render();
-  initRest();
+  initRest({
+    isWorkoutOpen: () => cur().at(-1).view === workoutView,
+    openWorkout: () => {
+      if (!stacks.train.some((e) => e.view === workoutView)) stacks.train.push({ view: workoutView, scroll: 0 });
+      state.tab = 'train'; render();
+    },
+  });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
