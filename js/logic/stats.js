@@ -128,3 +128,68 @@ export function trainingTip(counts, nextRoutineId) {
   if (little.length && TIP_COVERS[nextRoutineId]?.some((k) => little.includes(k))) text += ` ${TIP_NEXT[nextRoutineId]} is up next, which helps.`;
   return text;
 }
+
+/* ---------- carousel insights ---------- */
+/** Workouts per rolling 7-day bucket, oldest first; the last bucket is "the last 7 days". */
+export function weeklyCounts(sessions, now = Date.now(), weeks = 6) {
+  const out = Array(weeks).fill(0);
+  for (const s of sessions) {
+    if (!s.entries?.length) continue;
+    const age = now - s.start;
+    if (age < 0) continue;
+    const i = Math.floor(age / (7 * 86400000));
+    if (i < weeks) out[weeks - 1 - i]++;
+  }
+  return out;
+}
+
+/**
+ * The most useful progress note about one lift at one gym over the last `days`:
+ *  - stall: the same top set (weight x reps, or reps for bodyweight) for 4+ workouts in a row
+ *  - gain: biggest improvement since the first workout in the window
+ * Returns null when nothing stands out.
+ */
+export function progressInsight(sessions, exercises, gyms, now = Date.now(), days = 120) {
+  const since = now - days * 86400000;
+  const inc = Object.fromEntries(gyms.map((g) => [g.id, g.increment || 2.5]));
+  const by = new Map();
+  for (const s of [...sessions].sort((a, b) => a.start - b.start)) {
+    if (s.start < since) continue;
+    for (const e of s.entries) {
+      const sets = e.sets.filter((x) => !x.warm && x.done !== false);
+      if (!sets.length) continue;
+      const key = `${e.exerciseId}|${s.gymId}`;
+      if (!by.has(key)) by.set(key, []);
+      by.get(key).push({ t: s.start, sets });
+    }
+  }
+  let stall = null, gain = null;
+  for (const [key, list] of by) {
+    if (list.length < 4) continue;
+    const [exerciseId, gymId] = key.split('|');
+    const type = exercises[exerciseId]?.type || 'wr';
+    if (type === 't') continue;
+    const pts = list.map(({ t, sets }) => {
+      const top = Math.max(...sets.map((x) => x.w || 0));
+      const reps = Math.max(...sets.filter((x) => (x.w || 0) === top).map((x) => x.r || 0));
+      return { t, top, reps, bestReps: Math.max(...sets.map((x) => x.r || 0)) };
+    });
+    const repsMode = pts.every((p) => p.top === 0);
+    const val = (p) => (repsMode ? p.bestReps : p.top);
+    const sig = (p) => (repsMode ? `${p.bestReps}` : `${p.top}x${p.reps}`);
+    let k = 1;
+    for (let i = pts.length - 2; i >= 0 && sig(pts[i]) === sig(pts.at(-1)); i--) k++;
+    const series = pts.slice(-10).map((p) => ({ t: p.t, v: val(p) }));
+    const base = { exerciseId, gymId, repsMode, series, increment: inc[gymId] || 2.5 };
+    if (k >= 4 && (!stall || k > stall.k || (k === stall.k && pts.at(-1).t > stall.last))) {
+      stall = { ...base, kind: 'stall', k, w: pts.at(-1).top, r: pts.at(-1).reps, last: pts.at(-1).t };
+    }
+    const d = val(pts.at(-1)) - val(pts[0]);
+    const min = repsMode ? 2 : inc[gymId] || 2.5;
+    if (d >= min && val(pts[0]) > 0) {
+      const rel = d / val(pts[0]);
+      if (!gain || rel > gain.rel) gain = { ...base, kind: 'gain', from: val(pts[0]), to: val(pts.at(-1)), since: pts[0].t, rel };
+    }
+  }
+  return stall || gain || null;
+}

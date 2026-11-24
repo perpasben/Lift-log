@@ -230,3 +230,27 @@ test('trainingTip: a lot vs neglected, next routine, and silence when there is n
   assert.equal(onlyLittle, "You haven't trained legs much in the past two weeks.");
   assert.equal(trainingTip({ chest: 30, back: 5, shoulders: 5, biceps: 5, quads: 5 }, 'leg'), 'You trained chest the most in the past two weeks. Nothing is falling behind.');
 });
+
+import { weeklyCounts, progressInsight } from '../js/logic/stats.js';
+test('weeklyCounts buckets rolling 7-day windows, oldest first, ignoring circuits', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(), d = 86400000;
+  const S = [{ start: now - 1 * d, entries: [1] }, { start: now - 6 * d, entries: [1] }, { start: now - 8 * d, entries: [1] }, { start: now - 40 * d, entries: [1] }, { start: now - 2 * d, entries: [] }];
+  assert.deepEqual(weeklyCounts(S, now, 6), [1, 0, 0, 0, 1, 2]);
+});
+test('progressInsight: stall wins, then gain, else null', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(), d = 86400000;
+  const mk = (days, exId, w, r, gym = 'big') => ({ id: `${exId}${days}`, gymId: gym, start: now - days * d, entries: [{ exerciseId: exId, sets: [{ w, r, done: true }, { w, r, done: true }] }] });
+  const ex = { bench: { type: 'wr' }, curl: { type: 'wr' }, pull: { type: 'bw' } };
+  const gyms = [{ id: 'big', increment: 2.5 }];
+  const stalled = [50, 40, 30, 20, 10, 3].map((dd) => mk(dd, 'bench', 50, 10));
+  const gaining = [100, 80, 60, 40, 20].map((dd, i) => mk(dd, 'curl', 20 + i * 2.5, 10));
+  const r1 = progressInsight([...stalled, ...gaining], ex, gyms, now);
+  assert.equal(r1.kind, 'stall'); assert.equal(r1.exerciseId, 'bench'); assert.equal(r1.k, 6); assert.equal(r1.w, 50);
+  const r2 = progressInsight(gaining, ex, gyms, now);
+  assert.equal(r2.kind, 'gain'); assert.equal(r2.from, 20); assert.equal(r2.to, 30);
+  const reps = [80, 60, 40, 20].map((dd, i) => mk(dd, 'pull', 0, 6 + i * 2));
+  assert.deepEqual([progressInsight(reps, ex, gyms, now).kind, progressInsight(reps, ex, gyms, now).repsMode], ['gain', true]);
+  assert.equal(progressInsight([mk(5, 'bench', 50, 10), mk(3, 'bench', 52.5, 8)], ex, gyms, now), null); // too few workouts
+  const old = [300, 280, 260, 240].map((dd) => mk(dd, 'bench', 50, 10));
+  assert.equal(progressInsight(old, ex, gyms, now), null); // outside the window
+});
