@@ -6,6 +6,7 @@ import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
 import { nextActiveSet, personalRecord, lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
+import { exercisePhoto } from '../photos.js';
 import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
@@ -118,10 +119,13 @@ function entryEl(ctx, e, repaint) {
 
   const workSets = e.sets.some((x) => !x.warm) ? e.sets.filter((x) => !x.warm) : e.sets;
   const doneN = workSets.filter((x) => x.done).length;
-  card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId),
+  const head = h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId),
     h('div', { class: 'meta' }, e.repMax ? (e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}\u2013${e.repMax} reps`) : `${workSets.length} sets`)),
   h('div', { class: 'prog', 'aria-label': `${doneN} of ${workSets.length} sets done` }, h('b', { class: 'num' }, String(doneN), h('small', {}, `/${workSets.length}`)), h('div', { class: 'segs' }, ...workSets.map((x) => h('i', { class: x.done ? 'on' : '' })))),
-  h('button', { class: 'more', 'aria-label': 'Exercise options', html: icon('more'), onclick: () => menu() })));
+  h('button', { class: 'more', 'aria-label': 'Exercise options', html: icon('more'), onclick: () => menu() }));
+  // the exercise photo (own, or by muscle group) sits behind the title and fades to black into the sets
+  const pic = exercisePhoto(ex);
+  if (pic) card.append(h('div', { class: 'ex-hero', style: `background-image:url(${pic})` }, head)); else card.append(head);
 
   const rec = type === 'wr' ? personalRecord(sessions, e.exerciseId, gym.id, e.sets) : null;
   if (rec) card.append(h('div', { class: 'pr' }, h('i', { html: icon('trophy') }), h('span', {}, 'New personal record'), h('b', { class: 'num' }, `${Number.isInteger(rec.w) ? rec.w : rec.w.toFixed(1)} kg \u00d7 ${rec.r}`)));

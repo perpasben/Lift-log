@@ -42,3 +42,7 @@ export function pickPhoto(maxSide = 1000) {
     input.click();
   });
 }
+
+/** photo for an exercise card: its own, else the one set for its muscle group, else none */
+export const exercisePhoto = (ex) => ex?.photo || (ex?.muscle ? photos()[`mus-${ex.muscle}`] : null) || null;
+export const MUSCLE_SLOTS = ['Chest', 'Back', 'Shoulders', 'Rear delts', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Abs'].map((m) => [`mus-${m}`, m]);
