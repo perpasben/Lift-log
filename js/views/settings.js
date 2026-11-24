@@ -92,7 +92,7 @@ export async function settingsView({ nav }) {
       row('Import StrengthLog CSV', 'Adds your past workouts', () => importCsv(nav))),
     h('h2', {}, 'About'),
     h('div', { class: 'card' },
-      h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Version'), h('span', { class: 'mono muted' }, `${VERSION} · ${BUILD}`)),
+      h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Version'), h('span', { class: 'mono muted' }, `${VERSION} · ${BUILD === '__BUILD__' ? 'dev' : BUILD}`)),
       info ? h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Service worker'), h('span', { class: `mono ${mismatch ? 'ac' : 'muted'}` }, `${info.version} · ${info.build}`)) : null,
       row('Check for updates', null, () => checkUpdate(status)),
       h('div', { class: 'row' }, status)));
