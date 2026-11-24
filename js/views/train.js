@@ -5,6 +5,7 @@ import { buildWorkout } from '../logic/workout.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
 import { extrasView } from './extras.js';
+import { muscleMapSection } from './musclemap.js';
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 
@@ -68,5 +69,6 @@ export async function trainView({ nav }) {
       ...(active ? [] : others.map((r) => row(`Do ${NAMES[r]} instead`, null, () => start(r, nav)))),
       row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
       row('Extras', 'Mobility, abs, farmer’s walk', () => nav.push(extrasView))),
-    h('p', { class: 'muted', style: 'margin-top:22px;font-size:14px' }, sessions.length ? `${sessions.length} workouts logged.` : 'No workouts yet. Import your StrengthLog history in Settings.'));
+    h('p', { class: 'muted', style: 'margin-top:22px;font-size:14px' }, sessions.length ? `${sessions.length} workouts logged.` : 'No workouts yet. Import your StrengthLog history in Settings.'),
+    await muscleMapSection());
 }

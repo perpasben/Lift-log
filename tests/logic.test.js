@@ -194,3 +194,23 @@ test('niceRange gives tidy ticks and handles flat data', () => {
   const f = niceRange(50, 50);
   assert.ok(f.lo < 50 && f.hi > 50);
 });
+
+import { muscleLoad, heat } from '../js/logic/stats.js';
+test('muscleLoad: rolling days across week boundaries, warm-ups ignored, last-N mode', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(); // Wed
+  const day = (n) => now - n * 86400000;
+  const ex = { bp: { muscle: 'Chest' }, sq: { muscle: 'Quads' }, fp: { muscle: 'Rear delts' }, cc: { muscle: 'Mobility' } };
+  const S = [
+    { id: 'sat', start: day(4), entries: [{ exerciseId: 'bp', sets: [{ done: true }, { done: true }, { warm: true, done: true }] }] },
+    { id: 'wed', start: day(0) - 1000, entries: [{ exerciseId: 'sq', sets: [{ done: true }] }, { exerciseId: 'cc', sets: [{ done: true }] }, { exerciseId: 'fp', sets: [{ done: true }] }] },
+    { id: 'old', start: day(9), entries: [{ exerciseId: 'bp', sets: [{ done: true }] }] },
+    { id: 'circuit', start: day(1), entries: [] },
+  ];
+  const r7 = muscleLoad(S, ex, { days: 7 }, now);
+  assert.deepEqual(r7.counts, { chest: 2, quads: 1, rearDelts: 1 });
+  assert.equal(r7.sessions, 2);
+  assert.equal(muscleLoad(S, ex, { days: 14 }, now).counts.chest, 3);
+  assert.deepEqual(muscleLoad(S, ex, { workouts: 1 }, now).counts, { quads: 1, rearDelts: 1 });
+  assert.equal(heat(0), '#2d2d33');
+  assert.equal(heat(10), '#ff6b1f');
+});

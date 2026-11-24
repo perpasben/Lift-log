@@ -66,3 +66,32 @@ export function niceRange(min, max, ticks = 3) {
   for (let v = lo; v <= hi + step / 2; v += step) vals.push(Math.round(v * 100) / 100);
   return { lo, hi, step, ticks: vals };
 }
+
+/* ---------- muscle load (map of what was trained) ---------- */
+export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Back: 'back', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs' };
+export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', back: 'Back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves' };
+
+/**
+ * Working sets per muscle over a rolling window.
+ * range: {days:n} (rolling, ends now) or {workouts:n} (latest n sessions that have lifting entries).
+ */
+export function muscleLoad(sessions, exercises, range, now = Date.now()) {
+  let used = [...sessions].filter((s) => s.entries.length).sort((a, b) => b.start - a.start);
+  if (range.workouts) used = used.slice(0, range.workouts);
+  else used = used.filter((s) => s.start > now - range.days * 86400000 && s.start <= now);
+  const counts = {};
+  for (const s of used) for (const e of s.entries) {
+    const key = MUSCLE_KEY[exercises[e.exerciseId]?.muscle];
+    if (!key) continue;
+    const n = e.sets.filter((x) => !x.warm && x.done !== false).length;
+    if (n) counts[key] = (counts[key] || 0) + n;
+  }
+  return { counts, sessions: used.length, from: used.length ? used.at(-1).start : null };
+}
+
+/** Mix grey -> accent by intensity 0..1 (returns #rrggbb). */
+export function heat(count, full = 10) {
+  const t = count > 0 ? 0.3 + 0.7 * Math.min(1, count / full) : 0;
+  const a = [45, 45, 51], b = [255, 107, 31];
+  return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+}
