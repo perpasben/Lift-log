@@ -1,8 +1,8 @@
-// Personal photos (avatar and home-card backgrounds). Stored in IndexedDB as small JPEG data URLs,
+// Personal photos for the home card. Stored in IndexedDB as small JPEG data URLs,
 // so they are part of the JSON backup and never leave the device.
 import * as db from './db.js';
 
-export const PHOTO_SLOTS = [['avatar', 'Avatar'], ['def', 'Home card (default)'], ['push', 'Push day'], ['pull', 'Pull day'], ['leg', 'Leg day']];
+export const PHOTO_SLOTS = [['def', 'Default'], ['push', 'Push day'], ['pull', 'Pull day'], ['leg', 'Leg day']];
 let cache = null;
 
 export async function loadPhotos() { cache = await db.kvGet('photos', {}); return cache; }

@@ -98,7 +98,7 @@ export async function settingsView({ nav }) {
     h('div', { class: 'card' }, h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Default rest'),
       h('div', { class: 'step' }, h('button', { 'aria-label': 'Less', onclick: bump(-15) }, '−'), rest, h('button', { 'aria-label': 'More', onclick: bump(15) }, '+')))),
     h('h2', {}, 'Personal'),
-    h('div', { class: 'card' }, row('Photos', 'Avatar and home card pictures', () => nav.push(photosView))),
+    h('div', { class: 'card' }, row('Photos', 'Pictures for the home card', () => nav.push(photosView))),
     h('h2', {}, 'Data'),
     h('div', { class: 'card' },
       row('Export backup', 'All data as one JSON file', exportData),

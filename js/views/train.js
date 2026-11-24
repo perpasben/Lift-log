@@ -9,10 +9,9 @@ import { muscleMapSection } from './musclemap.js';
 import { insightsCarousel } from './carousel.js';
 import { accent2 } from '../theme.js';
 import { akey } from '../logic/substitution.js';
-import { heroPhoto, photos, pickPhoto, setPhoto } from '../photos.js';
+import { heroPhoto, pickPhoto, setPhoto } from '../photos.js';
 import { icon } from '../icons.js';
 import { howTo } from '../howto.js';
-import { photosView } from './photos.js';
 import { weeklyCounts, muscleLoad } from '../logic/stats.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
@@ -80,10 +79,7 @@ export async function trainView({ nav }) {
   const lens = sessions.filter((s) => s.routineId === next && s.gymId === gym?.id).sort((a, b) => b.start - a.start).slice(0, 6).map((s) => Math.round((s.end - s.start) / 60000)).filter((m) => m >= 15 && m <= 120).sort((a, b) => a - b);
   const minutes = lens.length ? lens[Math.floor(lens.length / 2)] : Math.round(totalSets * 3);
 
-  const avatar = photos().avatar;
-  const top = h('div', { class: 'home-top' },
-    h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('b', {}, 'LiftLog')),
-    h('button', { class: 'avatar', 'aria-label': 'Photos', style: avatar ? `background-image:url(${avatar})` : '', html: avatar ? '' : icon('user'), onclick: () => nav.push(photosView) }));
+  const top = h('div', { class: 'home-top' }, h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('b', {}, 'LiftLog')));
 
   const photo = heroPhoto(shownId);
   const changePhoto = async () => { const url = await pickPhoto(1000); if (!url) return; await setPhoto(shownId, url); nav.refresh(); };
