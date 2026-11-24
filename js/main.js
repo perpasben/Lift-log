@@ -10,6 +10,7 @@ import { loadActive, getActive } from './active.js';
 import { workoutView } from './views/workout.js';
 import { initRest, refreshRest } from './rest.js';
 import { migrate } from './migrate.js';
+import { applyAccent2 } from './theme.js';
 
 const TABS = [['train', 'Train', trainView], ['history', 'History', historyView], ['library', 'Library', libraryView], ['settings', 'Settings', settingsView]];
 
@@ -66,6 +67,7 @@ async function render() {
 }
 
 async function boot() {
+  applyAccent2();
   await seed();
   await migrate();
   await loadActive();

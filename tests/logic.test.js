@@ -231,7 +231,7 @@ test('trainingTip: a lot vs neglected, next routine, and silence when there is n
   assert.equal(trainingTip({ chest: 30, back: 5, shoulders: 5, biceps: 5, quads: 5 }, 'leg'), 'You trained chest the most in the past two weeks. Nothing is falling behind.');
 });
 
-import { weeklyCounts, progressInsight } from '../js/logic/stats.js';
+import { weeklyCounts, progressInsight, lastTimeNote, ROUTINE_MUSCLES } from '../js/logic/stats.js';
 test('weeklyCounts buckets rolling 7-day windows, oldest first, ignoring circuits', () => {
   const now = new Date(2026, 10, 25, 12).getTime(), d = 86400000;
   const S = [{ start: now - 1 * d, entries: [1] }, { start: now - 6 * d, entries: [1] }, { start: now - 8 * d, entries: [1] }, { start: now - 40 * d, entries: [1] }, { start: now - 2 * d, entries: [] }];
@@ -253,4 +253,25 @@ test('progressInsight: stall wins, then gain, else null', () => {
   assert.equal(progressInsight([mk(5, 'bench', 50, 10), mk(3, 'bench', 52.5, 8)], ex, gyms, now), null); // too few workouts
   const old = [300, 280, 260, 240].map((dd) => mk(dd, 'bench', 50, 10));
   assert.equal(progressInsight(old, ex, gyms, now), null); // outside the window
+});
+
+test('progressInsight can be limited to a gym and to certain exercises', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(), d = 86400000;
+  const mk = (days, exId, w, r, gym) => ({ id: `${exId}${days}${gym}`, gymId: gym, start: now - days * d, entries: [{ exerciseId: exId, sets: [{ w, r, done: true }] }] });
+  const ex = { bench: { type: 'wr', muscle: 'Chest' }, ext: { type: 'wr', muscle: 'Quads' } };
+  const gyms = [{ id: 'big', increment: 2.5 }, { id: 'office', increment: 2.5 }];
+  const S = [...[50, 40, 30, 20].map((dd) => mk(dd, 'bench', 50, 10, 'big')), ...[50, 40, 30, 20, 10].map((dd) => mk(dd, 'ext', 40, 10, 'big')), ...[9, 8, 7, 6].map((dd) => mk(dd, 'bench', 20, 10, 'office'))];
+  const legsOnly = progressInsight(S, ex, gyms, now, 120, { filter: (id) => ROUTINE_MUSCLES.leg.includes(ex[id]?.muscle) });
+  assert.equal(legsOnly.exerciseId, 'ext');
+  const pushOnly = progressInsight(S, ex, gyms, now, 120, { filter: (id) => ROUTINE_MUSCLES.push.includes(ex[id]?.muscle), gymId: 'office' });
+  assert.equal(pushOnly.gymId, 'office'); assert.equal(pushOnly.w, 20);
+  assert.equal(progressInsight(S, ex, gyms, now, 120, { filter: () => false }), null);
+});
+test('lastTimeNote: first planned lift with history, double progression hint', () => {
+  const ex = { a: { name: 'Leg Extension', type: 'wr' }, b: { name: 'Calf Raise', type: 'wr' } };
+  const S = [{ gymId: 'big', start: new Date(2026, 10, 4).getTime(), entries: [{ exerciseId: 'b', sets: [{ w: 40, r: 12, done: true }, { w: 40, r: 12, done: true }] }] }];
+  assert.equal(lastTimeNote(S, [{ id: 'a', repMin: 10, repMax: 12 }, { id: 'b', repMin: 10, repMax: 12 }], 'big', ex), 'Calf Raise: last time 40 kg \u00d7 12, 4 Nov. Try 42.5 kg.');
+  const S2 = [{ gymId: 'big', start: new Date(2026, 10, 4).getTime(), entries: [{ exerciseId: 'a', sets: [{ w: 40, r: 10, done: true }, { w: 40, r: 11, done: true }] }] }];
+  assert.equal(lastTimeNote(S2, [{ id: 'a', repMin: 10, repMax: 12 }], 'big', ex), 'Leg Extension: last time 40 kg \u00d7 11, 4 Nov. Aim for 12 reps at 40 kg.');
+  assert.equal(lastTimeNote(S2, [{ id: 'a' }], 'office', ex), null);
 });

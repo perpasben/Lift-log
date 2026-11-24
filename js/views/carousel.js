@@ -1,5 +1,6 @@
 import { h } from '../ui.js';
-import { muscleLoad, trainingTip, TIP_GROUPS, weeklyCounts, progressInsight, heat } from '../logic/stats.js';
+import { muscleLoad, trainingTip, TIP_GROUPS, weeklyCounts, progressInsight, lastTimeNote, ROUTINE_MUSCLES, heat } from '../logic/stats.js';
+import { accent2 } from '../theme.js';
 
 const GROUP = { chest: 'Chest', back: 'Back', shoulders: 'Shoulders', arms: 'Arms', legs: 'Legs' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -38,7 +39,7 @@ function consistencySlide(sessions) {
   const now = w.at(-1), avg = Math.round((w.reduce((a, b) => a + b, 0) / w.length) * 10) / 10;
   const big = h('b', { class: 'num cnt' }, reduced() ? String(now) : '0');
   const el = slide('Consistency', [big, ` workout${now === 1 ? '' : 's'} in the last 7 days, ${fmtNum(avg)} a week on average.`],
-    miniBars(w, Math.max(4, ...w), w.map((_, i) => (i === w.length - 1 ? '#ff6b1f' : '#4a453e'))));
+    miniBars(w, Math.max(4, ...w), w.map((_, i) => (i === w.length - 1 ? accent2().hex : '#4a453e'))));
   el._in = () => countUp(big, now);
   if (!reduced()) el._out = () => { big.textContent = '0'; };
   return el;
@@ -53,29 +54,30 @@ function sparkline(series) {
   const y = (v) => (hi === lo ? H / 2 : H - P - ((v - lo) / span) * (H - 2 * P));
   const d = series.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join('');
   const last = series.length - 1;
-  return h('div', { class: 'spark', html: `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" pathLength="1" class="spark-l" fill="none" stroke="#ff6b1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${x(last).toFixed(1)}" cy="${y(vals[last]).toFixed(1)}" r="3" class="spark-d" fill="#ff6b1f"/></svg>` });
+  return h('div', { class: 'spark', html: `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" pathLength="1" class="spark-l" fill="none" stroke="${accent2().hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${x(last).toFixed(1)}" cy="${y(vals[last]).toFixed(1)}" r="3" class="spark-d" fill="${accent2().hex}"/></svg>` });
 }
 
-function progressSlide(ins, exercises, gymName) {
-  if (!ins) return slide('Progress', ['Notes appear once you log the same lift in four or more workouts.'], null);
+function progressSlide(ins, note, exercises) {
+  if (!ins) return slide('Progress', [note || 'Notes appear once you log the same lift in four or more workouts.'], null);
   const name = exercises[ins.exerciseId]?.name || 'This lift';
-  const where = gymName ? ` at ${gymName}` : '';
   let text;
   if (ins.kind === 'stall') {
     const top = ins.repsMode ? `${ins.r || ins.w} reps` : `${fmtNum(ins.w)} kg \u00d7 ${ins.r}`;
-    text = `${name}${where} has stayed at ${top} for ${ins.k} workouts. ${ins.repsMode ? 'Add weight or a rep?' : `Try +${fmtNum(ins.increment)} kg?`}`;
+    text = `${name} has stayed at ${top} for ${ins.k} workouts. ${ins.repsMode ? 'Add weight or a rep?' : `Try +${fmtNum(ins.increment)} kg?`}`;
   } else {
-    text = ins.repsMode ? `${name}${where}: ${ins.from} to ${ins.to} reps since ${date(ins.since)}.` : `${name}${where}: ${fmtNum(ins.from)} to ${fmtNum(ins.to)} kg since ${date(ins.since)}.`;
+    text = ins.repsMode ? `${name}: ${ins.from} to ${ins.to} reps since ${date(ins.since)}.` : `${name}: ${fmtNum(ins.from)} to ${fmtNum(ins.to)} kg since ${date(ins.since)}.`;
   }
   return slide('Progress', [text], sparkline(ins.series));
 }
 
 /** Swipeable insights built only from the user's own workouts. */
-export function insightsCarousel({ sessions, exercises, gyms, nextId }) {
+export function insightsCarousel({ sessions, exercises, gyms, nextId, gym, planned = [] }) {
   const counts = muscleLoad(sessions, exercises, { days: 14 }).counts;
-  const ins = progressInsight(sessions, exercises, gyms);
-  const gymName = ins ? gyms.find((g) => g.id === ins.gymId)?.name : '';
-  const slides = [balanceSlide(counts, nextId), consistencySlide(sessions), progressSlide(ins, exercises, gyms.length > 1 ? gymName : '')];
+  // progress is about today's workout: the muscles of the routine that is up next, at the gym you will use
+  const muscles = ROUTINE_MUSCLES[nextId];
+  const ins = progressInsight(sessions, exercises, gyms, Date.now(), 120, { gymId: gym?.id, filter: muscles ? (id) => muscles.includes(exercises[id]?.muscle) : undefined });
+  const note = ins ? null : lastTimeNote(sessions, planned, gym?.id, exercises, gym?.increment || 2.5);
+  const slides = [balanceSlide(counts, nextId), consistencySlide(sessions), progressSlide(ins, note, exercises)];
   const track = h('div', { class: 'car-track' }, ...slides);
   const dots = slides.map((_, i) => h('button', { class: 'car-dot', 'aria-label': `Insight ${i + 1} of ${slides.length}`, onclick: () => track.scrollTo({ left: i * track.clientWidth, behavior: reduced() ? 'auto' : 'smooth' }) }));
   let cur = -1;

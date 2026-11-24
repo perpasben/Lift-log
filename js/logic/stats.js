@@ -1,3 +1,4 @@
+import { suggestNext } from './progression.js';
 // Calendar and progress helpers. Pure functions over stored sessions.
 export const dayKey = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -89,11 +90,15 @@ export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   return { counts, last, sessions: used.length, from: used.length ? used.at(-1).start : null };
 }
 
+let END = [255, 107, 31];
+/** The colour the heat ramp ends in (the second accent). */
+export function setHeatRamp(mid) { END = mid; }
+
 /** Mix grey -> accent by intensity 0..1 (returns #rrggbb). */
 export function heat(count, full = 10) {
   const t = count > 0 ? 0.3 + 0.7 * Math.min(1, count / full) : 0;
-  const a = [45, 45, 51], b = [255, 107, 31];
-  return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+  const a = [45, 45, 51];
+  return `#${a.map((c, i) => Math.round(c + (END[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
 }
 
 /** "today", "yesterday", "3 days ago" */
@@ -149,13 +154,15 @@ export function weeklyCounts(sessions, now = Date.now(), weeks = 6) {
  *  - gain: biggest improvement since the first workout in the window
  * Returns null when nothing stands out.
  */
-export function progressInsight(sessions, exercises, gyms, now = Date.now(), days = 120) {
+export function progressInsight(sessions, exercises, gyms, now = Date.now(), days = 120, opts = {}) {
   const since = now - days * 86400000;
   const inc = Object.fromEntries(gyms.map((g) => [g.id, g.increment || 2.5]));
   const by = new Map();
   for (const s of [...sessions].sort((a, b) => a.start - b.start)) {
     if (s.start < since) continue;
+    if (opts.gymId && s.gymId !== opts.gymId) continue;
     for (const e of s.entries) {
+      if (opts.filter && !opts.filter(e.exerciseId)) continue;
       const sets = e.sets.filter((x) => !x.warm && x.done !== false);
       if (!sets.length) continue;
       const key = `${e.exerciseId}|${s.gymId}`;
@@ -192,4 +199,31 @@ export function progressInsight(sessions, exercises, gyms, now = Date.now(), day
     }
   }
   return stall || gain || null;
+}
+
+/** Muscles each routine works (matches the catalog's `muscle` field). */
+export const ROUTINE_MUSCLES = { push: ['Chest', 'Shoulders', 'Triceps'], pull: ['Back', 'Biceps', 'Rear delts'], leg: ['Quads', 'Hamstrings', 'Glutes', 'Calves'] };
+
+/**
+ * "Last time" note for today's workout: the first planned lift that has history at this gym.
+ * planned: [{id, repMin, repMax}] in workout order.
+ */
+export function lastTimeNote(sessions, planned, gymId, exercises, increment = 2.5) {
+  for (const p of planned) {
+    const ex = exercises[p.id];
+    if (!ex || ex.type === 't') continue;
+    const hist = sessions.filter((s) => s.gymId === gymId).sort((a, b) => b.start - a.start);
+    for (const s of hist) {
+      const e = s.entries.find((x) => x.exerciseId === p.id);
+      const sets = e?.sets.filter((x) => !x.warm && x.done !== false);
+      if (!sets?.length) continue;
+      const top = Math.max(...sets.map((x) => x.w || 0));
+      const reps = Math.max(...sets.filter((x) => (x.w || 0) === top).map((x) => x.r || 0));
+      const sug = suggestNext(sets, { repMin: p.repMin || 8, repMax: p.repMax || 12, increment });
+      const was = top ? `${top} kg \u00d7 ${reps}` : `${reps} reps`;
+      const next = sug.bumped ? `Try ${sug.weight} kg.` : `Aim for ${sug.reps} reps${top ? ` at ${top} kg` : ''}.`;
+      return `${ex.name}: last time ${was}, ${new Date(s.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}. ${next}`;
+    }
+  }
+  return null;
 }

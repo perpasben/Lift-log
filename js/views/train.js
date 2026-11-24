@@ -7,6 +7,8 @@ import { workoutView } from './workout.js';
 import { extrasView } from './extras.js';
 import { muscleMapSection } from './musclemap.js';
 import { insightsCarousel } from './carousel.js';
+import { accent2 } from '../theme.js';
+import { akey } from '../logic/substitution.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 // Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
@@ -17,7 +19,7 @@ function weekDial(done, goal = 4) {
   for (let i = 0; i < goal; i++) {
     const a0 = i * (360 / goal) + gap / 2, a1 = a0 + seg;
     const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
-    paths += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${i < done ? '#ff6b1f' : '#2a2724'}" stroke-width="7"/>`;
+    paths += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${i < done ? accent2().hex : '#2a2724'}" stroke-width="7"/>`;
   }
   const el = h('div', { class: 'dial', role: 'img', 'aria-label': `${done} of ${goal} workouts in the last 7 days` });
   el.innerHTML = `<svg viewBox="0 0 80 80" width="84" height="84">${paths}<text x="40" y="46" text-anchor="middle" class="dial-n">${done}</text></svg><span>last 7 days<br>goal ${goal}</span>`;
@@ -57,7 +59,7 @@ async function start(routineId, nav) {
 }
 
 export async function trainView({ nav }) {
-  const [sessions, routines, gyms, pending, settings, exAll] = await Promise.all([db.all('sessions'), db.all('routines'), db.all('gyms'), db.all('pending'), db.kvGet('settings', {}), db.all('exercises')]);
+  const [sessions, routines, gyms, pending, settings, exAll, asgAll] = await Promise.all([db.all('sessions'), db.all('routines'), db.all('gyms'), db.all('pending'), db.kvGet('settings', {}), db.all('exercises'), db.all('assignments')]);
   const active = getActive();
   const next = nextRoutine(sessions);
   const routine = routines.find((r) => r.id === next);
@@ -82,8 +84,10 @@ export async function trainView({ nav }) {
 
   const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
   const exMap = Object.fromEntries(exAll.map((e) => [e.id, e]));
+  const asg = Object.fromEntries(asgAll.map((a) => [a.id, a.exerciseId]));
+  const planned = (routine.gymBlocks?.[gym?.id] || routine.blocks).flatMap((b) => b.items.map((it) => ({ id: asg[akey(it.slotId, gym?.id)], repMin: it.repMin, repMax: it.repMax }))).filter((p) => p.id);
   return h('div', { style: 'padding-top:18px' }, hero,
-    !active && sessions.length >= 3 ? insightsCarousel({ sessions, exercises: exMap, gyms, nextId: next }) : null,
+    !active && sessions.length >= 3 ? insightsCarousel({ sessions, exercises: exMap, gyms, nextId: next, gym, planned }) : null,
     active ? null : h('h2', {}, 'Or instead'),
     active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-dot' }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
     h('h2', {}, 'Extras'),
