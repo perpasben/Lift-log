@@ -109,7 +109,7 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .wk-top .ttl span { color: var(--mu); font-size: 13px; }
 .ibtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--s2); border: 1px solid var(--line); flex: none; }
 .ibtn.go { background: var(--ac); color: #1a0a00; border-color: transparent; }
-.blk { margin: 0 0 14px; }
+.blk { margin: 0 0 30px; }
 .blk.ss { border-left: 3px solid var(--ac); padding-left: 10px; border-radius: 2px; }
 .blk-h { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: var(--mu); font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .blk-h b { color: var(--ac); }
