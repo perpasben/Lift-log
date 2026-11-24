@@ -71,6 +71,7 @@ async function boot() {
   render();
   initRest({
     isWorkoutOpen: () => cur().at(-1).view === workoutView,
+    nextSet: () => document.querySelector('#view .set:not(.done)')?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
     openWorkout: () => {
       if (!stacks.train.some((e) => e.view === workoutView)) stacks.train.push({ view: workoutView, scroll: 0 });
       state.tab = 'train'; render();
