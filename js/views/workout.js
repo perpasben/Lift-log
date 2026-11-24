@@ -179,7 +179,13 @@ function swipeable(row, actions) {
   const wrap = h('div', { class: 'swipe' });
   wrap.append(h('div', { class: 'swipe-act' }, ...actions.map((a) => h('button', { class: `sa ${a.cls || ''}`, onclick: a.fn }, a.label))), row);
   let x = 0, sx = 0, sy = 0, base = 0, mode = null, pid = null, opened = false, swipedAt = 0;
-  const move = (v, anim) => { x = v; row.style.transition = anim ? 'transform .2s ease' : 'none'; row.style.transform = `translateX(${v}px)`; };
+  const move = (v, anim) => {
+    x = v; row.style.transition = anim ? 'transform .2s ease' : 'none'; row.style.transform = `translateX(${v}px)`;
+    // the red/grey action buttons live behind the row: only show them while it is slid open (no colour bleeding at the rounded edges)
+    if (v < -2) wrap.classList.add('revealed');
+    else if (anim) setTimeout(() => { if (x >= -2) wrap.classList.remove('revealed'); }, 230);
+    else wrap.classList.remove('revealed');
+  };
   const api = { close() { opened = false; move(0, true); if (openRow === api) openRow = null; } };
   row.style.touchAction = 'pan-y';
   row.addEventListener('pointerdown', (e) => { if (openRow && openRow !== api) openRow.close(); sx = e.clientX; sy = e.clientY; base = opened ? -W : 0; mode = null; pid = e.pointerId; });

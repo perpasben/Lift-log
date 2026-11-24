@@ -372,3 +372,11 @@ button.row:active.alt-row { background: none; }
 .set.done .dot::before { background: var(--ac); border-color: var(--ac); }
 .dot { color: var(--mu); }
 .set.done .dot { color: #1d0b00; }
+
+/* digits sit high in the line box: nudge them so the number is optically centred in the circle */
+.dot { line-height: 1; }
+.set:not(.done) .dot { padding-top: 3.5px; }
+
+.swipe-act { opacity: 0; }
+.swipe.revealed .swipe-act { opacity: 1; }
+.set.active { border-color: var(--ac2); }
