@@ -18,11 +18,13 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; background: var(--bg); color: var(--tx); height: 100%; overscroll-behavior: none; }
+html, body { touch-action: manipulation; margin: 0; background: var(--bg); color: var(--tx); height: 100%; overscroll-behavior: none; }
 body { font-size: 16px; line-height: 1.35; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
 #app { height: 100dvh; display: flex; flex-direction: column; }
 #view { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: calc(var(--sat) + 14px) 18px calc(var(--tab-h) + var(--sab) + 28px); }
 .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+* { -webkit-touch-callout: none; }
+input, textarea { -webkit-touch-callout: default; user-select: text; }
 button, input, select, textarea { font: inherit; color: inherit; }
 input, select, textarea { font-size: 16px; }
 button { background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }

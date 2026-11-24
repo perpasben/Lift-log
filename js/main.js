@@ -51,4 +51,9 @@ async function boot() {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
 }
+// iOS ignores user-scalable=no in some modes: block pinch and double-tap zoom explicitly.
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
+let lastTouch = 0;
+document.addEventListener('touchend', (e) => { const n = Date.now(); if (n - lastTouch < 350 && !e.target.closest('input,textarea')) e.preventDefault(); lastTouch = n; }, { passive: false });
+
 boot();
