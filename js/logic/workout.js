@@ -152,3 +152,25 @@ export function personalRecord(sessions, exerciseId, gymId, sets) {
   const cand = completion(work);
   return better(cand, best) ? cand : null;
 }
+
+/**
+ * The set to highlight: it follows where you are working. After the last set you ticked, the next undone set of that
+ * same exercise; once that exercise is finished, the next exercise (in list order) that still has sets. Before any
+ * tick it is the first undone set of the workout.  w.lastDone = {id, i} of the last ticked set.
+ */
+export function nextActiveSet(w) {
+  const open = (e) => !e.skipped && !!e.exerciseId && e.sets.some((s) => !s.done);
+  const first = (e) => ({ id: e.id, i: e.sets.findIndex((s) => !s.done) });
+  const last = w.lastDone;
+  if (last) {
+    const e = w.entries.find((x) => x.id === last.id);
+    if (e && open(e)) {
+      const i = e.sets.findIndex((s, k) => !s.done && k > last.i);
+      return { id: e.id, i: i >= 0 ? i : e.sets.findIndex((s) => !s.done) };
+    }
+    const at = w.entries.findIndex((x) => x.id === last.id);
+    if (at >= 0) for (let k = 1; k <= w.entries.length; k++) { const c = w.entries[(at + k) % w.entries.length]; if (open(c)) return first(c); }
+  }
+  const f = w.entries.find(open);
+  return f ? first(f) : null;
+}

@@ -104,7 +104,7 @@ test('screw-on dumbbells satisfy dumbbell exercises', () => {
   assert.ok(!availableAt({ equipment: ['barbell'] }, gym));
 });
 
-import { personalRecord, addedDefaults, lastPreferGym, buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
+import { nextActiveSet, personalRecord, addedDefaults, lastPreferGym, buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
 const gymB = { id: 'big', increment: 2.5 };
 const R = { blocks: [
   { id: 'w', label: 'Warm-up', kind: 'warmup', rounds: 2, items: [{ slotId: 'rot', repMin: 12, repMax: 12 }] },
@@ -288,4 +288,20 @@ test('personalRecord: only when the whole exercise is completed at a heavier wei
   assert.deepEqual(personalRecord(hist, 'b', 'big', day(52.5, 11)), { w: 52.5, r: 11 }); // same weight, more reps
   assert.equal(personalRecord(hist, 'b', 'big', day(80, 5, 2)), null); // fewer than 3 sets
   assert.equal(personalRecord([...hist, mk('office', 90, 5)], 'b', 'big', day(60, 5))?.w, 60); // other gyms ignored
+});
+
+test('nextActiveSet follows the last ticked set and moves on when an exercise is finished', () => {
+  const ent = (id, n, extra = {}) => ({ id, exerciseId: id, sets: Array.from({ length: n }, () => ({ done: false })), ...extra });
+  const w = { entries: [ent('a', 3), ent('b', 3), ent('c', 2), ent('d', 2, { skipped: true })] };
+  assert.deepEqual(nextActiveSet(w), { id: 'a', i: 0 });          // nothing ticked: first set of the first exercise
+  w.entries[2].sets[0].done = true; w.lastDone = { id: 'c', i: 0 };  // you started with the third exercise
+  assert.deepEqual(nextActiveSet(w), { id: 'c', i: 1 });          // the highlight follows you there
+  w.entries[0].sets[0].done = true; w.lastDone = { id: 'a', i: 0 };  // back to the top
+  assert.deepEqual(nextActiveSet(w), { id: 'a', i: 1 });
+  w.entries[2].sets[1].done = true; w.lastDone = { id: 'c', i: 1 };  // finishing the third exercise: on to the next one with sets
+  assert.deepEqual(nextActiveSet(w), { id: 'a', i: 1 });          // d is skipped, wraps to a
+  w.entries[1].sets.forEach((x) => { x.done = true; }); w.entries[0].sets.forEach((x) => { x.done = true; }); w.lastDone = { id: 'a', i: 2 };
+  assert.equal(nextActiveSet(w), null);                            // everything done
+  const w2 = { entries: [ent('a', 3), ent('b', 3)], lastDone: { id: 'a', i: 2 } }; w2.entries[0].sets[2].done = true;
+  assert.deepEqual(nextActiveSet(w2), { id: 'a', i: 0 });         // ticked the last set first: back to the earlier undone one
 });

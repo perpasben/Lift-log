@@ -4,7 +4,7 @@ import { icon } from '../icons.js';
 import { getActive, saveActive, clearActive } from '../active.js';
 import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
-import { personalRecord, lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
+import { nextActiveSet, personalRecord, lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
 import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
@@ -37,7 +37,7 @@ export async function workoutView({ nav }) {
   const paintAll = () => blocksEl.replaceChildren(...w.blocks.map((b) => blockEl(ctx, b)));
   ctx.paintAll = paintAll;
   // the one highlighted set: the next undone set of the first unfinished exercise
-  ctx.nextSet = () => { for (const e of w.entries) { if (e.skipped || !e.exerciseId) continue; const i = e.sets.findIndex((x) => !x.done); if (i >= 0) return { id: e.id, i }; } return null; };
+  ctx.nextSet = () => nextActiveSet(w);
   paintAll();
 
   root.append(
@@ -141,6 +141,7 @@ function entryEl(ctx, e, repaint) {
     else row.append(...field('r', 'reps', '0'));
     dot.addEventListener('click', () => {
       s.done = !s.done; s.at = Date.now();
+      w.lastDone = s.done ? { id: e.id, i } : { id: e.id, i: i - 1 }; // the highlight follows the last tick
       ctx.persist();
       if (s.done && restDue(w, e, i)) startRest(settings.restSec);
       ctx.paintAll();
