@@ -20,7 +20,10 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { touch-action: manipulation; margin: 0; background: var(--bg); color: var(--tx); height: 100%; overscroll-behavior: none; }
 body { font-size: 16px; line-height: 1.35; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
-#app { height: 100dvh; display: flex; flex-direction: column; }
+html { height: 100%; }
+#app { position: fixed; inset: 0; height: 100dvh; display: flex; flex-direction: column; }
+/* Installed iOS app: there is no collapsing browser chrome, so the large viewport is the real screen. */
+@media (display-mode: standalone) { #app { height: 100vh; height: -webkit-fill-available; } }
 #view { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: calc(var(--sat) + 14px) 18px calc(var(--tab-h) + var(--sab) + 28px); }
 .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 * { -webkit-touch-callout: none; }
@@ -65,7 +68,7 @@ button.row:active { background: var(--s2); }
 .btn.danger { color: var(--bad); }
 
 /* tabs */
-#tabs { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + var(--sab)); padding-bottom: var(--sab); display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(0, 0, 0, .82); -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); border-top: 1px solid var(--line); z-index: 5; }
+#tabs { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + var(--sab)); padding-bottom: var(--sab); display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(0, 0, 0, .82); -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); border-top: 1px solid var(--line); z-index: 5; }
 #tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--mu); font-size: 11px; font-weight: 560; position: relative; }
 #tabs button[aria-current="true"] { color: var(--ac); }
 #tabs button[aria-current="true"]::before { content: ""; position: absolute; top: 0; width: 26px; height: 3px; border-radius: 0 0 3px 3px; background: var(--ac); }

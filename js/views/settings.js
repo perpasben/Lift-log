@@ -72,6 +72,15 @@ async function importCsv(nav) {
   nav.refresh();
 }
 
+function diag() {
+  const p = h('div', { style: 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top)' });
+  document.body.append(p);
+  const cs = getComputedStyle(p);
+  const r = `window ${innerWidth}\u00d7${innerHeight} \u00b7 screen ${screen.width}\u00d7${screen.height} \u00b7 safe top ${cs.paddingTop} bottom ${cs.paddingBottom} \u00b7 standalone ${navigator.standalone ?? matchMedia('(display-mode: standalone)').matches}`;
+  p.remove();
+  return r;
+}
+
 export async function settingsView({ nav }) {
   const settings = await db.kvGet('settings', { restSec: 90 });
   const info = await swInfo();
@@ -95,5 +104,6 @@ export async function settingsView({ nav }) {
       h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Version'), h('span', { class: 'mono muted' }, `${VERSION} · ${BUILD === '__BUILD__' ? 'dev' : BUILD}`)),
       info ? h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Service worker'), h('span', { class: `mono ${mismatch ? 'ac' : 'muted'}` }, `${info.version} · ${info.build}`)) : null,
       row('Check for updates', null, () => checkUpdate(status)),
+      h('div', { class: 'row' }, h('div', { class: 'grow' }, h('div', { class: 't' }, 'Display'), h('div', { class: 'd mono', id: 'diag' }, diag()))),
       h('div', { class: 'row' }, status)));
 }
