@@ -23,7 +23,7 @@ body { font-size: 16px; line-height: 1.35; -webkit-font-smoothing: antialiased; 
 html { height: 100%; }
 #app { position: fixed; inset: 0; height: 100dvh; display: flex; flex-direction: column; }
 /* Installed iOS app: there is no collapsing browser chrome, so the large viewport is the real screen. */
-@media (display-mode: standalone) { #app { height: 100vh; height: -webkit-fill-available; } }
+@media (display-mode: standalone) { #app { height: var(--app-h, 100vh); } }
 #view { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: calc(var(--sat) + 14px) 18px calc(var(--tab-h) + var(--sab) + 28px); }
 .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 * { -webkit-touch-callout: none; }
