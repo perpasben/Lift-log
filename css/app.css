@@ -394,8 +394,8 @@ button.row:active.alt-row { background: none; }
 .act-go { background: var(--ac2); color: #1d0b00; border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 700; }
 
 /* exercise photo: title over the picture, fading to black into the sets (compact) */
-.ex-hero { position: relative; margin: 0 -14px 8px; padding: 58px 14px 2px; background: #111 center / cover; isolation: isolate; }
+.ex-hero { position: relative; margin: 0 -14px 6px; padding: 26px 14px 0; background: #111 center / cover; isolation: isolate; }
 .ex-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, #000 3%, rgba(0, 0, 0, .6) 42%, rgba(0, 0, 0, .12) 100%); }
-.ex-hero .ex-h { padding-bottom: 8px; }
+.ex-hero .ex-h { padding-bottom: 6px; }
 .ex-hero .nm { font-size: 17px; letter-spacing: -.02em; }
 .ex-hero .meta { font-size: 12px; }
