@@ -104,7 +104,7 @@ test('screw-on dumbbells satisfy dumbbell exercises', () => {
   assert.ok(!availableAt({ equipment: ['barbell'] }, gym));
 });
 
-import { addedDefaults, lastPreferGym, buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
+import { personalRecord, addedDefaults, lastPreferGym, buildWorkout, lastFor, restDue, routineChanges, toSession, stats } from '../js/logic/workout.js';
 const gymB = { id: 'big', increment: 2.5 };
 const R = { blocks: [
   { id: 'w', label: 'Warm-up', kind: 'warmup', rounds: 2, items: [{ slotId: 'rot', repMin: 12, repMax: 12 }] },
@@ -274,4 +274,15 @@ test('lastTimeNote: first planned lift with history, double progression hint', (
   const S2 = [{ gymId: 'big', start: new Date(2026, 10, 4).getTime(), entries: [{ exerciseId: 'a', sets: [{ w: 40, r: 10, done: true }, { w: 40, r: 11, done: true }] }] }];
   assert.equal(lastTimeNote(S2, [{ id: 'a', repMin: 10, repMax: 12 }], 'big', ex), 'Leg Extension: last time 40 kg \u00d7 11, 4 Nov. Aim for 12 reps at 40 kg.');
   assert.equal(lastTimeNote(S2, [{ id: 'a' }], 'office', ex), null);
+});
+
+test('personalRecord: needs history, compares weight then reps, ignores warm-ups and other gyms', () => {
+  const mk = (gym, w, r) => ({ gymId: gym, start: 1, entries: [{ exerciseId: 'b', sets: [{ w, r, done: true }] }] });
+  const hist = [mk('big', 50, 10), mk('big', 55, 8), mk('big', 52.5, 10)];
+  assert.equal(personalRecord([hist[0]], 'b', 'big', [{ w: 99, r: 5, done: true }]), null); // too little history
+  assert.deepEqual(personalRecord(hist, 'b', 'big', [{ w: 57.5, r: 6, done: true }]), { w: 57.5, r: 6 });
+  assert.equal(personalRecord(hist, 'b', 'big', [{ w: 55, r: 8, done: true }]), null); // equal is not a record
+  assert.deepEqual(personalRecord(hist, 'b', 'big', [{ w: 55, r: 9, done: true }]), { w: 55, r: 9 }); // same weight, more reps
+  assert.equal(personalRecord(hist, 'b', 'big', [{ w: 80, r: 5, done: true, warm: true }, { w: 80, r: 5, done: false }]), null);
+  assert.equal(personalRecord([...hist, mk('office', 90, 5)], 'b', 'big', [{ w: 60, r: 1, done: true }])?.w, 60);
 });

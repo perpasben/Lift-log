@@ -1,5 +1,6 @@
 // Rest timer pill. Source of truth is an absolute end time stored on the active workout.
 import { h } from './ui.js';
+import { icon } from './icons.js';
 import { getActive, saveActive } from './active.js';
 import { startTimer, remaining, addSeconds, fmt } from './logic/timer.js';
 
@@ -18,13 +19,14 @@ export function initRest(h2 = {}) {
     h('span', { class: 'act-dot' }), h('span', { class: 'act-t' }, h('small', {}, 'Active workout'), h('span', {}, actName, ' \u00b7 ', actTime)), h('span', { class: 'act-go' }, 'Resume'));
   document.getElementById('app').insertBefore(actBar, document.getElementById('tabs'));
   label = h('span', { class: 'rest-t num' });
-  bar = h('div', { class: 'rest-bar' });
+  bar = h('i', {});
   pill = h('div', { class: 'rest', hidden: true },
-    bar,
-    h('button', { class: 'rest-b', 'aria-label': '15 seconds less', onclick: () => nudge(-15) }, '−15'),
+    h('span', { class: 'rest-ic', html: icon('timer') }),
     label,
+    h('div', { class: 'rest-line' }, bar),
+    h('button', { class: 'rest-b', 'aria-label': '15 seconds less', onclick: () => nudge(-15) }, '\u221215'),
     h('button', { class: 'rest-b', 'aria-label': '15 seconds more', onclick: () => nudge(15) }, '+15'),
-    h('button', { class: 'rest-b', 'aria-label': 'Skip rest', onclick: stop }, 'Skip'));
+    h('button', { class: 'rest-b x', 'aria-label': 'Skip rest', onclick: stop, html: icon('plus') }));
   document.getElementById('app').insertBefore(pill, document.getElementById('tabs'));
   actBar.addEventListener('animationend', () => actBar.classList.remove('reveal'));
   timerId = setInterval(() => tick(), 250);
@@ -68,7 +70,7 @@ function tick(animate = false) {
       restShown = true;
       pill.classList.toggle('over', left === 0);
       label.textContent = left === 0 ? 'Rest over' : fmt(left);
-      bar.style.width = `${left === 0 ? 100 : Math.max(0, 100 - (left / t.total) * 100)}%`;
+      bar.style.width = `${left === 0 ? 0 : Math.max(0, (left / t.total) * 100)}%`;
     }
   }
   pill.hidden = !restShown;

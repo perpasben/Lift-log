@@ -4,7 +4,7 @@ import { icon } from '../icons.js';
 import { getActive, saveActive, clearActive } from '../active.js';
 import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
-import { lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
+import { personalRecord, lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
 import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
@@ -35,6 +35,9 @@ export async function workoutView({ nav }) {
 
   const blocksEl = h('div');
   const paintAll = () => blocksEl.replaceChildren(...w.blocks.map((b) => blockEl(ctx, b)));
+  ctx.paintAll = paintAll;
+  // the one highlighted set: the next undone set of the first unfinished exercise
+  ctx.nextSet = () => { for (const e of w.entries) { if (e.skipped || !e.exerciseId) continue; const i = e.sets.findIndex((x) => !x.done); if (i >= 0) return { id: e.id, i }; } return null; };
   paintAll();
 
   root.append(
@@ -113,16 +116,24 @@ function entryEl(ctx, e, repaint) {
     return card;
   }
 
+  const workSets = e.sets.some((x) => !x.warm) ? e.sets.filter((x) => !x.warm) : e.sets;
+  const doneN = workSets.filter((x) => x.done).length;
   card.append(h('div', { class: 'ex-h' }, h('div', { class: 'grow' }, h('div', { class: 'nm' }, ex?.name || e.exerciseId),
-    h('div', { class: 'meta' }, `${e.sets.filter((x) => !x.warm).length || e.sets.length} sets${e.repMax ? ` · ${e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}–${e.repMax} reps`}` : ''}`)),
+    h('div', { class: 'meta' }, e.repMax ? (e.repMin === e.repMax ? `${e.repMax} reps` : `${e.repMin}\u2013${e.repMax} reps`) : `${workSets.length} sets`)),
+  h('div', { class: 'prog', 'aria-label': `${doneN} of ${workSets.length} sets done` }, h('b', { class: 'num' }, String(doneN), h('small', {}, `/${workSets.length}`)), h('div', { class: 'segs' }, ...workSets.map((x) => h('i', { class: x.done ? 'on' : '' })))),
   h('button', { class: 'more', 'aria-label': 'Exercise options', html: icon('more'), onclick: () => menu() })));
 
+  const rec = type === 'wr' ? personalRecord(sessions, e.exerciseId, gym.id, e.sets) : null;
+  if (rec) card.append(h('div', { class: 'pr' }, h('i', { html: icon('trophy') }), h('span', {}, 'New personal record'), h('b', { class: 'num' }, `${Number.isInteger(rec.w) ? rec.w : rec.w.toFixed(1)} kg \u00d7 ${rec.r}`)));
+
+  const nxt = ctx.nextSet();
+  const activeIdx = nxt && nxt.id === e.id ? nxt.i : -1;
   let work = 0;
   e.sets.forEach((s, i) => {
     if (!s.warm) work++;
     const dot = h('button', { class: 'dot', 'aria-label': `Mark set ${i + 1} done` }, s.done ? '' : s.warm ? 'W' : String(work));
     if (s.done) dot.innerHTML = icon('check');
-    const row = h('div', { class: `set ${s.done ? 'done' : ''}` }, dot, h('div', { class: 'sp' }));
+    const row = h('div', { class: `set ${s.done ? 'done' : ''} ${i === activeIdx ? 'active' : ''}`, 'data-n': s.warm ? 'W' : String(work).padStart(2, '0') }, dot, h('div', { class: 'sp' }));
     const field = (key, unit, ph) => [h('input', { class: 'in', inputmode: 'decimal', value: s[key] ?? '', placeholder: ph, 'aria-label': unit, onfocus: (ev) => ev.target.select(), oninput: (ev) => { s[key] = num(ev.target.value); ctx.persist(); } }), h('span', { class: 'unit' }, unit)];
     if (type === 'wr') row.append(...field('w', 'kg', '0'), ...field('r', 'reps', '0'));
     else if (type === 'bw') row.append(h('span', { class: 'unit' }, '+'), ...field('w', 'kg', '0'), ...field('r', 'reps', '0'));
@@ -130,16 +141,15 @@ function entryEl(ctx, e, repaint) {
     else row.append(...field('r', 'reps', '0'));
     dot.addEventListener('click', () => {
       s.done = !s.done; s.at = Date.now();
-      row.classList.toggle('done', s.done);
-      dot.innerHTML = s.done ? icon('check') : (s.warm ? 'W' : String(e.sets.slice(0, i + 1).filter((x) => !x.warm).length));
       ctx.persist();
       if (s.done && restDue(w, e, i)) startRest(settings.restSec);
+      ctx.paintAll();
     });
     card.append(swipeable(row, [
       { label: s.warm ? 'Work set' : 'Warm-up', fn: () => { s.warm = !s.warm; ctx.persist(); repaint(); } },
       { label: 'Delete', cls: 'del', fn: () => { e.sets.splice(i, 1); ctx.persist(); repaint(); } }]));
   });
-  card.append(h('button', { class: 'addset', onclick: () => { const t = e.sets[e.sets.length - 1]; e.sets.push({ w: t?.w ?? null, r: t?.r ?? e.repMin, t: t?.t ?? null, warm: false, done: false }); ctx.persist(); repaint(); } }, h('span', { html: icon('plus') }), 'Set'));
+  card.append(h('button', { class: 'addset', onclick: () => { const t = e.sets[e.sets.length - 1]; e.sets.push({ w: t?.w ?? null, r: t?.r ?? e.repMin, t: t?.t ?? null, warm: false, done: false }); ctx.persist(); repaint(); } }, h('span', { html: icon('plus') }), 'Add set'));
 
   function menu() {
     sheet((close) => {

@@ -125,3 +125,26 @@ export function stats(session) {
 }
 
 export const pendingAfter = (w) => unfinished(w);
+
+/**
+ * A live "new personal record": today's best done set beats the heaviest set ever logged for this lift at this gym.
+ * Needs at least 3 earlier workouts so the first sessions are not all records. Returns {w, r} or null.
+ */
+export function personalRecord(sessions, exerciseId, gymId, sets) {
+  let best = null, n = 0;
+  for (const s of sessions) {
+    if (s.gymId !== gymId) continue;
+    const e = s.entries.find((x) => x.exerciseId === exerciseId);
+    const ws = e?.sets.filter((x) => !x.warm && x.done !== false && (x.w || 0) > 0);
+    if (!ws?.length) continue;
+    n++;
+    for (const x of ws) if (!best || x.w > best.w || (x.w === best.w && (x.r || 0) > best.r)) best = { w: x.w, r: x.r || 0 };
+  }
+  if (!best || n < 3) return null;
+  let cand = null;
+  for (const x of sets) {
+    if (!x.done || x.warm || !((x.w || 0) > 0)) continue;
+    if (!cand || x.w > cand.w || (x.w === cand.w && (x.r || 0) > cand.r)) cand = { w: x.w, r: x.r || 0 };
+  }
+  return cand && (cand.w > best.w || (cand.w === best.w && cand.r > best.r)) ? cand : null;
+}
