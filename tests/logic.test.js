@@ -217,3 +217,16 @@ test('muscleLoad: rolling days across week boundaries, warm-ups ignored, last-N 
   assert.equal(heat(0), '#2d2d33');
   assert.equal(heat(10), '#ff6b1f');
 });
+
+import { trainingTip } from '../js/logic/stats.js';
+test('trainingTip: a lot vs neglected, next routine, and silence when there is nothing to say', () => {
+  const pushPull = { chest: 11, shoulders: 6, rearDelts: 4, triceps: 8, biceps: 8, back: 12 };
+  assert.equal(trainingTip(pushPull, 'leg'), 'You trained arms and back a lot in the past two weeks and neglected legs. Leg is up next, which helps.');
+  assert.equal(trainingTip(pushPull, 'push'), 'You trained arms and back a lot in the past two weeks and neglected legs.');
+  assert.equal(trainingTip({ chest: 4, back: 4, shoulders: 3, biceps: 2, triceps: 2, quads: 4 }, 'pull'), null); // balanced
+  assert.equal(trainingTip({ chest: 3, back: 2 }, 'push'), null); // too little data
+  assert.equal(trainingTip({ chest: 6, back: 6, shoulders: 6, biceps: 6, quads: 6, triceps: 0 }, 'pull'), null);
+  const onlyLittle = trainingTip({ chest: 6, back: 6, shoulders: 6, biceps: 3, triceps: 3, quads: 0 }, 'push');
+  assert.equal(onlyLittle, "You haven't trained legs much in the past two weeks.");
+  assert.equal(trainingTip({ chest: 30, back: 5, shoulders: 5, biceps: 5, quads: 5 }, 'leg'), 'You trained chest the most in the past two weeks. Nothing is falling behind.');
+});

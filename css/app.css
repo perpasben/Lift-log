@@ -265,3 +265,6 @@ button.row:active.alt-row { background: none; }
 
 .actbar.reveal { animation: act-in .34s cubic-bezier(.2, .8, .2, 1); }
 @keyframes act-in { from { transform: translateY(28px); opacity: 0; } }
+
+.tip { margin: 14px 2px 0; padding-left: 12px; border-left: 2px solid var(--ac); color: #cfc8bf; font-size: 15px; line-height: 1.4; }
+.tip b { color: var(--ac); margin-right: 8px; font-weight: 700; }

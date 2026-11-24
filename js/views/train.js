@@ -6,6 +6,7 @@ import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
 import { extrasView } from './extras.js';
 import { muscleMapSection } from './musclemap.js';
+import { muscleLoad, trainingTip } from '../logic/stats.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 // Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
@@ -56,7 +57,7 @@ async function start(routineId, nav) {
 }
 
 export async function trainView({ nav }) {
-  const [sessions, routines, gyms, pending, settings] = await Promise.all([db.all('sessions'), db.all('routines'), db.all('gyms'), db.all('pending'), db.kvGet('settings', {})]);
+  const [sessions, routines, gyms, pending, settings, exAll] = await Promise.all([db.all('sessions'), db.all('routines'), db.all('gyms'), db.all('pending'), db.kvGet('settings', {}), db.all('exercises')]);
   const active = getActive();
   const next = nextRoutine(sessions);
   const routine = routines.find((r) => r.id === next);
@@ -80,7 +81,9 @@ export async function trainView({ nav }) {
       h('button', { class: 'btn pri block', onclick: () => start(next, nav) }, 'Start workout'));
 
   const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
+  const tipText = active ? null : trainingTip(muscleLoad(sessions, Object.fromEntries(exAll.map((e) => [e.id, e])), { days: 14 }).counts, next);
   return h('div', { style: 'padding-top:18px' }, hero,
+    tipText ? h('p', { class: 'tip' }, h('b', {}, 'Tip'), tipText) : null,
     active ? null : h('h2', {}, 'Or instead'),
     active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-dot' }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
     h('h2', {}, 'Extras'),

@@ -101,3 +101,30 @@ export function ago(ms, now = Date.now()) {
   const d = Math.floor((now - ms) / 86400000);
   return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
 }
+
+/* ---------- "Tip": what got a lot of work and what was neglected ---------- */
+export const TIP_GROUPS = { chest: ['chest'], back: ['back'], shoulders: ['shoulders', 'rearDelts'], arms: ['biceps', 'triceps'], legs: ['quads', 'hamstrings', 'glutes', 'calves'] };
+const TIP_COVERS = { push: ['chest', 'shoulders', 'arms'], pull: ['back', 'arms', 'shoulders'], leg: ['legs'] };
+const TIP_NEXT = { push: 'Push', pull: 'Pull', leg: 'Leg' };
+const listWords = (a) => (a.length === 2 ? `${a[0]} and ${a[1]}` : a[0]);
+
+/**
+ * One or two plain sentences, or null when there is nothing useful to say.
+ * counts: working sets per muscle over the last two weeks (see muscleLoad).
+ */
+export function trainingTip(counts, nextRoutineId) {
+  const g = Object.fromEntries(Object.entries(TIP_GROUPS).map(([k, keys]) => [k, keys.reduce((n, m) => n + (counts[m] || 0), 0)]));
+  const total = Object.values(g).reduce((a, b) => a + b, 0);
+  if (total < 8) return null; // not enough recent training to say anything
+  const avg = total / Object.keys(g).length;
+  const asc = Object.entries(g).sort((a, b) => a[1] - b[1]);
+  const much = [...asc].reverse().filter(([, n]) => n >= Math.max(10, avg * 1.2)).slice(0, 2).map((e) => e[0]);
+  const little = asc.filter(([k, n]) => n <= Math.max(2, avg * 0.35) && !much.includes(k)).slice(0, 2).map((e) => e[0]);
+  if (!much.length && !little.length) return null;
+  let text;
+  if (much.length && little.length) text = `You trained ${listWords(much)} a lot in the past two weeks and neglected ${listWords(little)}.`;
+  else if (little.length) text = `You haven't trained ${listWords(little)} much in the past two weeks.`;
+  else text = `You trained ${listWords(much)} the most in the past two weeks. Nothing is falling behind.`;
+  if (little.length && TIP_COVERS[nextRoutineId]?.some((k) => little.includes(k))) text += ` ${TIP_NEXT[nextRoutineId]} is up next, which helps.`;
+  return text;
+}
