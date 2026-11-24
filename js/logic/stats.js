@@ -89,9 +89,12 @@ export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   return { counts, sessions: used.length, from: used.length ? used.at(-1).start : null };
 }
 
-/** Mix grey -> accent by intensity 0..1 (returns #rrggbb). */
+/** Heat color for a set count: warm grey -> orange -> amber at the top end. */
 export function heat(count, full = 10) {
-  const t = count > 0 ? 0.3 + 0.7 * Math.min(1, count / full) : 0;
-  const a = [45, 45, 51], b = [255, 107, 31];
-  return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+  const hex = (c) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const grey = [46, 42, 39], orange = [255, 107, 31], amber = [255, 192, 138];
+  if (count <= 0) return hex(grey);
+  const u = Math.min(1, count / full);
+  return u <= 0.7 ? hex(mix(grey, orange, 0.3 + (u / 0.7) * 0.7)) : hex(mix(orange, amber, (u - 0.7) / 0.3));
 }

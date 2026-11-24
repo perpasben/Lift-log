@@ -1,6 +1,7 @@
 import * as db from '../db.js';
 import { h, topbar, fmtDate, fmtDur } from '../ui.js';
 import { icon } from '../icons.js';
+import { rcOf } from '../theme.js';
 import { muscleMapSection } from './musclemap.js';
 import { fmtSet } from './workout.js';
 import { stats } from '../logic/workout.js';
@@ -12,8 +13,7 @@ let mode = 'calendar';
 let q = '';
 const today = new Date();
 let cal = { y: today.getFullYear(), m: today.getMonth(), sel: dayKey(Date.now()) };
-const RCOL = { push: '#ff6b1f', pull: '#7aa2ff', leg: '#5fd6a1' };
-const colorOf = (s) => RCOL[s.routineId] || '#a1a1aa';
+const colorOf = (s) => rcOf(s.routineId);
 const chartSel = {};
 
 const setsLine = (type, sets) => sets.map((s) => (s.warm ? `W ${fmtSet(type, s)}` : fmtSet(type, s))).join('  ·  ');
@@ -55,7 +55,7 @@ function calendar(ctx) {
     h('div', { class: 'cal-nav' }, h('button', { class: 'ibtn', 'aria-label': 'Previous month', html: icon('back'), onclick: () => go(-1) }), h('div', { class: 'cal-t' }, h('b', {}, title), h('span', { class: 'muted' }, `${g.count} workouts \u00b7 ${dur}`)),
       h('button', { class: 'ibtn', 'aria-label': 'Next month', html: icon('chev'), onclick: () => go(1) })),
     grid,
-    h('div', { class: 'cal-key' }, ...[['Push', RCOL.push], ['Pull', RCOL.pull], ['Leg', RCOL.leg], ['Other', '#a1a1aa']].map(([n, c]) => h('span', {}, h('i', { class: 'cal-dot', style: `background:${c}` }), n))),
+    h('div', { class: 'cal-key' }, ...[['Push', rcOf('push')], ['Pull', rcOf('pull')], ['Leg', rcOf('leg')], ['Other', rcOf('extra')]].map(([n, c]) => h('span', {}, h('i', { class: 'cal-dot', style: `background:${c}` }), n))),
     dayList);
 }
 
@@ -68,6 +68,7 @@ function workouts(ctx) {
     if (m !== month) { month = m; box.append(h('h2', {}, m)); card = h('div', { class: 'card' }); box.append(card); }
     const sets = s.entries.reduce((n, e) => n + e.sets.filter((x) => !x.warm).length, 0);
     card.append(h('button', { class: 'row', onclick: () => ctx.nav.push(() => sessionView(ctx, s.id)) },
+      h('span', { class: 'cal-dot lg', style: `background:${colorOf(s)}` }),
       h('div', { class: 'grow' }, h('div', { class: 't' }, label(s)), h('div', { class: 'd' }, `${fmtDate(s.start)} · ${ctx.gname[s.gymId] || ''}`)),
       h('div', { class: 'muted mono', style: 'text-align:right;font-size:14px' }, fmtDur(s.start, s.end), sets ? h('br') : null, sets ? `${sets} sets` : null),
       h('span', { class: 'chev', html: icon('chev') })));
@@ -178,6 +179,12 @@ function lineChart(pts, metric) {
   svg.append(el('text', { x: L, y: H - 6, class: 'ax' }, fmtD(t0)));
   if (t1 !== t0) svg.append(el('text', { x: W - R, y: H - 6, 'text-anchor': 'end', class: 'ax' }, fmtD(t1)));
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' ');
+  if (pts.length > 1) {
+    const defs = el('defs', {}); const g = el('linearGradient', { id: 'ag', x1: 0, y1: 0, x2: 0, y2: 1 });
+    g.append(el('stop', { offset: '0%', 'stop-color': '#ff6b1f', 'stop-opacity': 0.28 }), el('stop', { offset: '100%', 'stop-color': '#ff6b1f', 'stop-opacity': 0 }));
+    defs.append(g); svg.append(defs);
+    svg.append(el('path', { d: `${d} L${x(t1).toFixed(1)} ${H - B} L${x(t0).toFixed(1)} ${H - B} Z`, fill: 'url(#ag)' }));
+  }
   if (pts.length > 1) svg.append(el('path', { d, fill: 'none', stroke: '#ff6b1f', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
   const cross = el('line', { y1: T, y2: H - B, stroke: 'rgba(255,255,255,.25)', 'stroke-width': 1, visibility: 'hidden' });
   svg.append(cross);

@@ -211,6 +211,8 @@ test('muscleLoad: rolling days across week boundaries, warm-ups ignored, last-N 
   assert.equal(r7.sessions, 2);
   assert.equal(muscleLoad(S, ex, { days: 14 }, now).counts.chest, 3);
   assert.deepEqual(muscleLoad(S, ex, { workouts: 1 }, now).counts, { quads: 1, rearDelts: 1 });
-  assert.equal(heat(0), '#2d2d33');
-  assert.equal(heat(10), '#ff6b1f');
+  assert.equal(heat(0), '#2e2a27');
+  assert.equal(heat(7), '#ff6b1f');
+  assert.equal(heat(10), '#ffc08a');
+  assert.notEqual(heat(2), heat(5));
 });

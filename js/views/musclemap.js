@@ -39,7 +39,7 @@ function figure(regions, counts, x0) {
     const a = `class="mm" data-m="${key}" fill="${fill}"`;
     return `<path ${a} d="${d}"/><path ${a} d="${d}" ${mirror}/>`;
   }).join('');
-  const base = `<g fill="#232329">${Object.values(BASE).join('')}${SIDE_BASE.map((p) => `<g>${p}</g><g ${mirror}>${p}</g>`).join('')}</g>`;
+  const base = `<g fill="#1f1c1a">${Object.values(BASE).join('')}${SIDE_BASE.map((p) => `<g>${p}</g><g ${mirror}>${p}</g>`).join('')}</g>`;
   return `<g transform="translate(${x0} 0)">${base}${paths}</g>`;
 }
 

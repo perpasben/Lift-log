@@ -1,3 +1,3 @@
 // BUILD is stamped by the Pages workflow (date + commit). Locally it stays "dev".
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 export const BUILD = '__BUILD__';

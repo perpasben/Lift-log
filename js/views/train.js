@@ -4,6 +4,7 @@ import { nextRoutine, pendingFor, ROTATION } from '../logic/carryover.js';
 import { buildWorkout } from '../logic/workout.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
+import { rcOf } from '../theme.js';
 import { extrasView } from './extras.js';
 import { muscleMapSection } from './musclemap.js';
 
@@ -51,19 +52,19 @@ export async function trainView({ nav }) {
   const others = ROTATION.filter((r) => r !== next);
 
   const hero = active
-    ? h('div', { class: 'hero' },
+    ? h('div', { class: 'hero', style: `--rc:${rcOf(active.routineId)}` },
       h('div', { class: 'kick' }, 'In progress'),
       h('div', { class: 'big' }, NAMES[active.routineId] || 'Workout'),
-      h('div', { class: 'chips' }, h('span', { class: 'chip' }, gyms.find((g) => g.id === active.gymId)?.name), h('span', { class: 'chip ac' }, `started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)),
+      h('div', { class: 'chips' }, h('span', { class: 'chip sand' }, gyms.find((g) => g.id === active.gymId)?.name), h('span', { class: 'chip ac' }, `started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`)),
       h('button', { class: 'btn pri block', onclick: () => nav.push(workoutView) }, 'Resume workout'))
-    : h('div', { class: 'hero' },
+    : h('div', { class: 'hero', style: `--rc:${rcOf(next)}` },
       h('div', { class: 'kick' }, 'Up next'),
       h('div', { class: 'big' }, routine.name),
-      h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${items} exercises`), h('span', { class: 'chip' }, gym?.name), carried ? h('span', { class: 'chip ac' }, `${carried} carried over`) : null),
+      h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${items} exercises`), h('span', { class: 'chip sand' }, gym?.name), carried ? h('span', { class: 'chip ac' }, `${carried} carried over`) : null),
       h('button', { class: 'btn pri block', onclick: () => start(next, nav) }, 'Start workout'));
 
   const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
-  return h('div', { style: 'padding-top:18px' }, hero,
+  return h('div', { style: 'padding-top:6px' }, hero,
     h('h2', {}, 'Other'),
     h('div', { class: 'card' },
       ...(active ? [] : others.map((r) => row(`Do ${NAMES[r]} instead`, null, () => start(r, nav)))),

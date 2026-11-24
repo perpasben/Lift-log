@@ -6,6 +6,7 @@ import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
 import { lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
+import { rcOf } from '../theme.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
 
@@ -23,6 +24,7 @@ export function fmtSet(type, s) {
 export async function workoutView({ nav }) {
   const w = getActive();
   const root = h('div');
+  if (w) root.style.setProperty('--rc', rcOf(w.routineId));
   if (!w) { root.append(h('div', { class: 'empty' }, 'No workout in progress.')); return root; }
   const [gym, exList, sessions, settings, allGyms] = await Promise.all([db.get('gyms', w.gymId), db.all('exercises'), db.all('sessions'), db.kvGet('settings', { restSec: 90 }), db.all('gyms')]);
   const ctx = { gymNames: Object.fromEntries(allGyms.map((g) => [g.id, g.name])), w, gym, exs: Object.fromEntries(exList.map((x) => [x.id, x])), sessions, settings, nav };

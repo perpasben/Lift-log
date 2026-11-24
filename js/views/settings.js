@@ -91,6 +91,7 @@ export async function settingsView({ nav }) {
   const row = (t, d, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, t), d ? h('div', { class: 'd' }, d) : null));
 
   return h('div', {}, ...topbar('Settings', nav),
+    h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('div', {}, h('b', {}, 'LiftLog'), h('span', {}, 'Personal gym tracker'))),
     h('h2', {}, 'Training'),
     h('div', { class: 'card' }, h('div', { class: 'row' }, h('div', { class: 'grow t' }, 'Default rest'),
       h('div', { class: 'step' }, h('button', { 'aria-label': 'Less', onclick: bump(-15) }, '−'), rest, h('button', { 'aria-label': 'More', onclick: bump(15) }, '+')))),
