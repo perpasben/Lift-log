@@ -45,7 +45,9 @@ function selectTab(id) {
     return;
   }
   rememberScroll();
+  const leavingTrain = state.tab === 'train' && id !== 'train';
   state.tab = id;
+  refreshRest(leavingTrain); // reveal the bar when leaving Train; hide it instantly when coming back
   render();
 }
 

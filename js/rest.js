@@ -26,9 +26,10 @@ export function initRest(h2 = {}) {
     h('button', { class: 'rest-b', 'aria-label': '15 seconds more', onclick: () => nudge(15) }, '+15'),
     h('button', { class: 'rest-b', 'aria-label': 'Skip rest', onclick: stop }, 'Skip'));
   document.getElementById('app').insertBefore(pill, document.getElementById('tabs'));
-  timerId = setInterval(tick, 250);
-  document.addEventListener('visibilitychange', tick);
-  addEventListener('pageshow', tick);
+  actBar.addEventListener('animationend', () => actBar.classList.remove('reveal'));
+  timerId = setInterval(() => tick(), 250);
+  document.addEventListener('visibilitychange', () => tick());
+  addEventListener('pageshow', () => tick());
   tick();
 }
 
@@ -52,9 +53,10 @@ function stop() {
   tick();
 }
 
-export const refreshRest = () => tick();
+/** animate: reveal the active-workout bar if it is becoming visible right now (used when leaving the Train tab). */
+export const refreshRest = (animate = false) => tick(animate);
 
-function tick() {
+function tick(animate = false) {
   const a = getActive();
   let restShown = false;
   const t = a?.rest;
@@ -72,7 +74,9 @@ function tick() {
   pill.hidden = !restShown;
   // no rest timer running: show the active-workout bar, but only outside the Train tab (Train already shows the workout)
   const showAct = !!a && !restShown && !!hooks.isOtherTab?.();
+  const wasShown = !actBar.hidden;
   actBar.hidden = !showAct;
+  if (showAct && !wasShown && animate) { actBar.classList.remove('reveal'); void actBar.offsetWidth; actBar.classList.add('reveal'); }
   if (showAct) {
     actBar.setAttribute('aria-label', 'Return to your active workout'); actName.textContent = ROUTINE_NAME[a.routineId] || 'Workout'; actTime.textContent = clock(Date.now() - a.start); }
 }

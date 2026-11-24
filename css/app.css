@@ -262,3 +262,6 @@ button.row:active.alt-row { background: none; }
 .act-t small { color: var(--mu); font-size: 12px; }
 .act-t span { font-weight: 650; }
 .act-go { background: var(--ac); color: #1d0b00; font-weight: 700; border-radius: 10px; padding: 9px 14px; font-size: 14px; }
+
+.actbar.reveal { animation: act-in .34s cubic-bezier(.2, .8, .2, 1); }
+@keyframes act-in { from { transform: translateY(28px); opacity: 0; } }
