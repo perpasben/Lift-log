@@ -28,7 +28,7 @@ function balanceSlide(counts, nextId) {
   const groups = Object.entries(TIP_GROUPS).map(([k, keys]) => [k, keys.reduce((n, m) => n + (counts[m] || 0), 0)]);
   const total = groups.reduce((n, g) => n + g[1], 0);
   const sentence = trainingTip(counts, nextId) || (total < 8 ? 'Not enough recent training to compare yet.' : 'Nicely balanced. Every muscle group got work.');
-  const el = slide('Balance', [sentence], miniBars(groups.map((g) => g[1]), Math.max(10, ...groups.map((g) => g[1])), groups.map((g) => heat(g[1]))));
+  const el = slide('Balance', [sentence], miniBars(groups.map((g) => g[1]), Math.max(10, ...groups.map((g) => g[1])), groups.map((g) => heat(g[1], 10, accent2().mid))));
   el.title = groups.map(([k, n]) => `${GROUP[k]} ${n}`).join(', ');
   return el;
 }

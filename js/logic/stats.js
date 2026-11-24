@@ -95,10 +95,10 @@ let END = [255, 107, 31];
 export function setHeatRamp(mid) { END = mid; }
 
 /** Mix grey -> accent by intensity 0..1 (returns #rrggbb). */
-export function heat(count, full = 10) {
+export function heat(count, full = 10, end = END) {
   const t = count > 0 ? 0.3 + 0.7 * Math.min(1, count / full) : 0;
   const a = [45, 45, 51];
-  return `#${a.map((c, i) => Math.round(c + (END[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+  return `#${a.map((c, i) => Math.round(c + (end[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
 }
 
 /** "today", "yesterday", "3 days ago" */

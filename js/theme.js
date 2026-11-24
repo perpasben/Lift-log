@@ -1,6 +1,5 @@
 // A second accent so the app is not all orange: orange stays for actions (Start, checks, tabs);
 // this one colours information (week ring, insights, muscle map, selected chips).
-import { setHeatRamp } from './logic/stats.js';
 
 export const PRESETS = {
   apricot: { hex: '#ffab6e', mid: [255, 171, 110], top: [255, 214, 178] },
@@ -11,7 +10,7 @@ export const PRESETS = {
   ice: { hex: '#b0cee2', mid: [176, 206, 226], top: [220, 236, 246] },
   orange: { hex: '#ff6b1f', mid: [255, 107, 31], top: [255, 192, 138] },
 };
-export const DEFAULT_ACCENT = 'apricot';
+export const DEFAULT_ACCENT = 'peach';
 
 export function accent2() {
   let key = DEFAULT_ACCENT;
@@ -25,5 +24,4 @@ export function applyAccent2() {
   root.setProperty('--ac2', a.hex);
   root.setProperty('--ac2-d', `rgba(${a.mid.join(',')}, .16)`);
   root.setProperty('--ac2-hi', `rgb(${a.top.join(',')})`);
-  setHeatRamp(a.mid, a.top);
 }
