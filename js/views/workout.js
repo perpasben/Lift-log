@@ -72,7 +72,8 @@ function blockEl(ctx, b) {
   const el = h('section', { class: `blk ${b.kind === 'superset' && b.entryIds.length > 1 ? 'ss' : ''}` });
   const paint = () => {
     const es = b.entryIds.map((id) => entryOf(w, id));
-    const label = b.kind === 'carry' ? h('div', { class: 'blk-h' }, 'Carried over from last time')
+    const shown = es.some((e) => !e.exerciseId || e.skipped || e.sets.length);
+    const label = !shown ? null : b.kind === 'carry' ? h('div', { class: 'blk-h' }, 'Carried over from last time')
       : b.kind === 'added' ? h('div', { class: 'blk-h' }, 'Added today')
         : b.kind === 'warmup' ? h('div', { class: 'blk-h' }, 'Warm-up')
           : null;
@@ -93,6 +94,12 @@ function entryEl(ctx, e, repaint) {
       h('button', { class: 'chip', onclick: () => { e.skipped = false; ctx.persist(); repaint(); } }, 'Restore')));
     return card;
   }
+
+  // every set removed: the exercise leaves the workout (nothing is saved or carried for it)
+  if (e.exerciseId && !e.sets.length) return null;
+
+  // an exercise left without sets disappears, so the whole list is repainted (the highlighted set moves on)
+  function afterRemove() { ctx.persist(); if (e.sets.length) repaint(); else ctx.paintAll(); }
 
   const choose = async (title) => {
     const id = await pickExercise({ gym, title });
@@ -152,9 +159,11 @@ function entryEl(ctx, e, repaint) {
     });
     card.append(swipeable(row, [
       { label: s.warm ? 'Work set' : 'Warm-up', fn: () => { s.warm = !s.warm; ctx.persist(); repaint(); } },
-      { label: 'Delete', cls: 'del', fn: () => { e.sets.splice(i, 1); ctx.persist(); repaint(); } }]));
+      { label: 'Delete', cls: 'del', fn: () => { e.sets.splice(i, 1); afterRemove(); } }]));
   });
-  card.append(h('button', { class: 'addset', onclick: () => { const t = e.sets[e.sets.length - 1]; e.sets.push({ w: t?.w ?? null, r: t?.r ?? e.repMin, t: t?.t ?? null, warm: false, done: false }); ctx.persist(); repaint(); } }, h('span', { html: icon('plus') }), 'Add set'));
+  card.append(h('div', { class: 'setbar' },
+    h('button', { class: 'addset', onclick: () => { const t = e.sets[e.sets.length - 1]; e.sets.push({ w: t?.w ?? null, r: t?.r ?? e.repMin, t: t?.t ?? null, warm: false, done: false }); ctx.persist(); repaint(); } }, h('span', { html: icon('plus') }), 'Add set'),
+    h('button', { class: 'rmset', 'aria-label': 'Remove last set', html: icon('minus'), onclick: () => { e.sets.pop(); afterRemove(); } })));
 
   function menu() {
     sheet((close) => {
@@ -180,7 +189,7 @@ function entryEl(ctx, e, repaint) {
         item('Other exercise\u2026', () => choose('Swap exercise')),
         ex?.photo ? item('Remove photo', () => savePhoto(null)) : null,
         item('Add warm-up set', () => { e.sets.unshift({ w: null, r: e.repMin, t: null, warm: true, done: false }); ctx.persist(); repaint(); }),
-        e.sets.length > 1 ? item('Remove last set', () => { e.sets.pop(); ctx.persist(); repaint(); }) : null,
+        item('Remove last set', () => { e.sets.pop(); afterRemove(); }),
         item('Skip this exercise', () => { e.skipped = true; ctx.persist(); repaint(); }, true))].filter(Boolean);
     });
   }

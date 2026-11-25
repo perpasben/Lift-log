@@ -433,3 +433,10 @@ button.row:active.alt-row { background: none; }
 /* Or instead: a routine photo fills the tile */
 .tile.has-photo { min-height: 128px; justify-content: flex-end; background-color: #111; background-size: cover; background-position: 88% 30%; overflow: hidden; border-color: #2a2a2e; }
 .tile.has-photo .tile-s { color: rgba(255, 255, 255, .7); }
+
+/* add / remove set */
+.setbar { display: flex; gap: 8px; margin-top: 2px; }
+.setbar .addset { flex: 1; width: auto; margin-top: 0; }
+.rmset { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 14px; color: var(--mu); }
+.rmset svg.i { width: 20px; height: 20px; }
+.rmset:active { background: var(--s2); }
