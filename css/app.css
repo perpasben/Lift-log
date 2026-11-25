@@ -408,3 +408,9 @@ button.row:active.alt-row { background: none; }
 /* quick opening animation for a screen pushed with one */
 .enter-up { animation: enter-up .28s cubic-bezier(.2, .8, .2, 1); }
 @keyframes enter-up { from { opacity: 0; transform: translateY(26px) scale(.985); } }
+
+/* exercise menu: the photo sits behind the title and description */
+.menu-hero { position: relative; margin: -28px -18px 0; padding: 120px 18px 4px; background: #111 right 20% / cover; isolation: isolate; border-radius: 16px 16px 0 0; }
+.menu-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(16, 15, 14, .96) 4%, rgba(16, 15, 14, .78) 42%, rgba(16, 15, 14, .1) 100%); }
+.menu-hero .how { color: #d8d4cf; }
+.sheet .grab { position: relative; z-index: 1; }

@@ -168,9 +168,10 @@ function entryEl(ctx, e, repaint) {
         ctx.exs[e.exerciseId] = rec;
         repaint();
       };
-      return [h('div', { class: 'menu-h' }, h('h3', {}, ex?.name || 'Exercise'),
+      const head = [h('div', { class: 'menu-h' }, h('h3', {}, ex?.name || 'Exercise'),
           h('button', { class: 'cam', 'aria-label': ex?.photo ? 'Change photo' : 'Add photo', html: icon('camera'), onclick: async () => { const u = await pickPhoto(700); if (!u) return; close(); await savePhoto(u); } })),
-        h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.'),
+        h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.')];
+      return [ex?.photo ? h('div', { class: 'menu-hero', style: `background-image:url(${ex.photo})` }, ...head) : h('div', {}, ...head),
         alts.length ? h('div', { class: 'alt-box' },
           h('div', { class: 'alt-h' }, `Swap ${ex?.name} for`),
           ...alts.map((a) => h('button', { class: 'row', onclick: () => { close(); swapTo(a.id); } },
