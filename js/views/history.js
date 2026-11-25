@@ -2,6 +2,7 @@ import * as db from '../db.js';
 import { h, topbar, fmtDate, fmtDur, confirmSheet, toast } from '../ui.js';
 import { icon, hasIcon } from '../icons.js';
 import { muscleMapSection } from './musclemap.js';
+import { statsSection } from './stats.js';
 import { fmtSet } from './workout.js';
 import { stats } from '../logic/workout.js';
 import { monthGrid, dayKey, exerciseSeries, metricsFor, niceRange } from '../logic/stats.js';
@@ -26,7 +27,7 @@ export async function historyView({ nav }) {
   const [sessions, gyms, exs] = await Promise.all([db.all('sessions'), db.all('gyms'), db.all('exercises')]);
   const ctx = { nav, sessions: sessions.sort((a, b) => b.start - a.start), gname: Object.fromEntries(gyms.map((g) => [g.id, g.name])), exs: Object.fromEntries(exs.map((e) => [e.id, e])) };
   out.append(mode === 'workouts' ? workouts(ctx) : mode === 'exercises' ? exercises(ctx) : calendar(ctx));
-  if (mode === 'calendar') out.append(await muscleMapSection());
+  if (mode === 'calendar') { out.append(await muscleMapSection()); out.append(statsSection(ctx.sessions, ctx.exs)); }
   return out;
 }
 

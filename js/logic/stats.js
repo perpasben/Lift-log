@@ -234,6 +234,74 @@ export function weeklyCounts(sessions, now = Date.now(), weeks = 6) {
   return out;
 }
 
+const WEEK = 7 * 86400000;
+/** Monday 00:00 (local) of the week a timestamp falls in. */
+export const weekStart = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+
+/** Days you trained in each of the last `weeks` calendar weeks (Mon-Sun), oldest first: [{start, days}]. */
+export function trainingDaysPerWeek(sessions, now = Date.now(), weeks = 12) {
+  const first = weekStart(now) - (weeks - 1) * WEEK;
+  const out = Array.from({ length: weeks }, (_, i) => ({ start: first + i * WEEK, days: new Set() }));
+  for (const s of sessions) {
+    if (!s.entries?.length || s.start < first || s.start > now) continue;
+    const i = Math.min(weeks - 1, Math.floor((weekStart(s.start) - first) / WEEK + 0.5));
+    out[i].days.add(dayKey(s.start));
+  }
+  return out.map((w) => ({ start: w.start, days: w.days.size }));
+}
+
+/**
+ * One number for "am I getting stronger?": for every lift you log (an exercise at a gym) take its best effort of each week
+ * (weight x reps as an estimated max; reps or seconds for bodyweight and timed lifts), compare with where that lift started,
+ * and take the median across your lifts. 100 = the day you started.
+ * Needs 3 lifts with at least 4 weeks of data; a lift not done for 8 weeks drops out until you do it again.
+ * @returns {{points: {t:number, v:number}[], lifts:number} | null}
+ */
+export function strengthIndex(sessions, exercises, now = Date.now()) {
+  const value = (type, x) => {
+    if (x.warm || x.done === false) return 0;
+    if (type === 'wr') return x.w > 0 && x.r > 0 ? x.w * (1 + Math.min(x.r, 12) / 30) : 0;
+    if (type === 't') return x.t > 0 ? x.t : 0;
+    return x.r > 0 ? x.r : 0; // bodyweight and reps-only
+  };
+  const lifts = new Map(); // key -> Map(weekStart -> best)
+  for (const s of sessions) {
+    if (!s.entries?.length || s.start > now) continue;
+    const wk = weekStart(s.start);
+    for (const e of s.entries) {
+      const type = exercises[e.exerciseId]?.type;
+      if (!type) continue;
+      const best = Math.max(0, ...(e.sets || []).map((x) => value(type, x)));
+      if (!best) continue;
+      const key = `${e.exerciseId}@${s.gymId}`;
+      if (!lifts.has(key)) lifts.set(key, new Map());
+      const m = lifts.get(key); m.set(wk, Math.max(m.get(wk) || 0, best));
+    }
+  }
+  const usable = [...lifts.values()].filter((m) => m.size >= 4).map((m) => {
+    const weeks = [...m.keys()].sort((a, b) => a - b);
+    return { m, weeks, base: Math.max(m.get(weeks[0]), m.get(weeks[1])) };
+  });
+  if (usable.length < 3) return null;
+  const startW = Math.min(...usable.map((l) => l.weeks[1]));
+  const points = [];
+  for (let w = startW; w <= weekStart(now); w += WEEK) {
+    const ratios = [];
+    for (const l of usable) {
+      if (w < l.weeks[1]) continue;
+      let v = 0, last = 0;
+      for (const k of l.weeks) if (k <= w) { v = l.m.get(k); last = k; }
+      if (w - last > 8 * WEEK) continue;
+      ratios.push(v / l.base);
+    }
+    if (ratios.length < 3) continue;
+    ratios.sort((a, b) => a - b);
+    const mid = ratios.length >> 1;
+    points.push({ t: w, v: Math.round((ratios.length % 2 ? ratios[mid] : (ratios[mid - 1] + ratios[mid]) / 2) * 1000) / 10 });
+  }
+  return points.length >= 2 ? { points, lifts: usable.length } : null;
+}
+
 /**
  * The most useful progress note about one lift at one gym over the last `days`:
  *  - stall: the same top set (weight x reps, or reps for bodyweight) for 4+ workouts in a row

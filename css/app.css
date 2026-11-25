@@ -475,3 +475,20 @@ button.row:active.alt-row { background: none; }
 .sum-pend { margin: 12px 2px 0; }
 .sum-done { margin-top: 18px; }
 @media (prefers-reduced-motion: reduce) { .rise, .wk-out { animation: none; } .wk-out { opacity: 0; } .sum .mm { transition: none; } }
+
+/* history: statistics */
+.st-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.st-tiles > div { background: var(--s1); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; display: grid; gap: 2px; }
+.st-tiles b { font-size: 26px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.st-tiles span { color: var(--mu); font-size: 13px; }
+.st-card { margin-top: 12px; background: var(--s1); border: 1px solid var(--line); border-radius: 16px; padding: 16px 14px 12px; }
+.st-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.st-h b { font-size: 17px; letter-spacing: -.01em; }
+.st-h span { color: var(--mu); font-size: 13px; }
+.st-big { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 8px; }
+.st-big b { font-size: 40px; font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.st-big b.neg { color: var(--mu); }
+.st-big span { color: var(--mu); font-size: 14px; }
+.st-card .chart { width: 100%; height: auto; display: block; }
+.st-note { color: var(--mu); font-size: 13px; line-height: 1.4; margin: 8px 2px 0; }
+.st-card .chart { border: 0; background: none; padding: 0; border-radius: 0; }

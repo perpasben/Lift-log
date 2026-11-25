@@ -454,3 +454,36 @@ test('planTopUp: when every muscle is covered it suggests posture and mobility, 
   assert.equal(p2.items[0].exerciseId, 'cable-external-shoulder-rotation');
   assert.ok(!p2.items.slice(1).some((i) => i.exerciseId === 'cat-cow' || i.exerciseId === 'open-book')); // recently done: others come first
 });
+
+import { trainingDaysPerWeek, strengthIndex, weekStart } from '../js/logic/stats.js';
+test('trainingDaysPerWeek: distinct training days per calendar week (Mon-Sun), oldest first', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(); // Wednesday
+  const at = (d, h = 18) => new Date(2026, 10, d, h).getTime();
+  const e = [{ exerciseId: 'x', sets: [{ done: true }] }];
+  const list = [{ start: at(23), entries: e }, { start: at(24), entries: e }, { start: at(24, 9), entries: e }, { start: at(16), entries: e }, { start: at(1), entries: e }, { start: at(25), entries: [] }];
+  const w = trainingDaysPerWeek(list, now, 4);
+  assert.equal(w.length, 4);
+  assert.equal(w.at(-1).days, 2);          // Mon 23 and Tue 24 (two workouts on the 24th count as one day); the empty one is ignored
+  assert.equal(w.at(-2).days, 1);          // Mon 16
+  assert.equal(w.at(-3).days, 0);
+  assert.equal(w[0].days, 0);              // 1 Nov (a Sunday) belongs to the week before the four shown
+  assert.equal(new Date(w.at(-1).start).getDay(), 1);
+  assert.equal(weekStart(now), new Date(2026, 10, 23).getTime());
+});
+
+test('strengthIndex: 100 at the start, median across lifts, null without enough data', () => {
+  const day = 86400000, start = new Date(2026, 8, 7).getTime(); // a Monday
+  const exs = { a: { type: 'wr' }, b: { type: 'wr' }, c: { type: 'wr' }, d: { type: 'wr' } };
+  const mk = (id, week, w) => ({ id: `${id}${week}`, gymId: 'g', start: start + week * 7 * day + 3600000, entries: [{ exerciseId: id, sets: [{ w, r: 10, done: true }, { w: 20, r: 10, warm: true, done: true }] }] });
+  const sessions = [];
+  for (let i = 0; i < 8; i++) { sessions.push(mk('a', i, 100 + 5 * i), mk('b', i, 60 + 3 * i), mk('c', i, 40)); } // a, b improve; c stays
+  const now = start + 7 * 7 * day + 2 * day;
+  const r = strengthIndex(sessions, exs, now);
+  assert.equal(r.lifts, 3);
+  assert.equal(r.points[0].v, 100);
+  // at the end a is 135/105 = 1.286, b is 81/63 = 1.286, c is 1.0 -> median 1.286
+  assert.equal(r.points.at(-1).v, 128.6);
+  assert.ok(r.points.every((p, i) => i === 0 || p.t > r.points[i - 1].t));
+  assert.equal(strengthIndex(sessions.filter((s) => s.entries[0].exerciseId !== 'c'), exs, now), null); // only two lifts
+  assert.equal(strengthIndex([], exs, now), null);
+});
