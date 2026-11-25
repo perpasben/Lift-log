@@ -399,3 +399,8 @@ button.row:active.alt-row { background: none; }
 .ex-hero .ex-h { padding-bottom: 6px; }
 .ex-hero .nm { font-size: 17px; letter-spacing: -.02em; }
 .ex-hero .meta { font-size: 12px; }
+
+.menu-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.menu-h h3 { margin: 0; }
+.cam { width: 34px; height: 34px; border-radius: 50%; background: var(--s2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--mu); flex: none; }
+.cam svg.i { width: 17px; height: 17px; }

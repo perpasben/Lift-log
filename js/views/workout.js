@@ -6,7 +6,7 @@ import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
 import { nextActiveSet, personalRecord, lastFor, lastPreferGym, addedDefaults, makeSets, suggestionFor, entryOf, restDue, routineChanges, toSession, stats, uid } from '../logic/workout.js';
 import { howTo } from '../howto.js';
-import { exercisePhoto } from '../photos.js';
+import { exercisePhoto, pickPhoto } from '../photos.js';
 import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
@@ -161,7 +161,15 @@ function entryEl(ctx, e, repaint) {
       const item = (label, fn, danger) => h('button', { class: 'row', style: danger ? 'color:var(--bad)' : '', onclick: () => { close(); fn(); } }, h('div', { class: 'grow t' }, label));
       const how = howTo(ex);
       const alts = alternativesFor(e.exerciseId, ctx.exs, gym);
-      return [h('h3', {}, ex?.name || 'Exercise'),
+      const savePhoto = async (url) => {
+        const rec = { ...(await db.get('exercises', e.exerciseId)) };
+        if (url) rec.photo = url; else delete rec.photo;
+        await db.put('exercises', rec);
+        ctx.exs[e.exerciseId] = rec;
+        repaint();
+      };
+      return [h('div', { class: 'menu-h' }, h('h3', {}, ex?.name || 'Exercise'),
+          h('button', { class: 'cam', 'aria-label': ex?.photo ? 'Change photo' : 'Add photo', html: icon('camera'), onclick: async () => { const u = await pickPhoto(700); if (!u) return; close(); await savePhoto(u); } })),
         h('p', { class: 'how' }, how || 'No description yet. Edit the exercise in Library to add your own notes.'),
         alts.length ? h('div', { class: 'alt-box' },
           h('div', { class: 'alt-h' }, `Swap ${ex?.name} for`),
@@ -169,6 +177,7 @@ function entryEl(ctx, e, repaint) {
             h('div', { class: 'grow t' }, ctx.exs[a.id].name), h('span', { class: 'chip' }, KIND_LABEL[a.kind])))) : null,
         h('div', { class: 'card', style: 'margin-top:12px' },
         item('Other exercise\u2026', () => choose('Swap exercise')),
+        ex?.photo ? item('Remove photo', () => savePhoto(null)) : null,
         item('Add warm-up set', () => { e.sets.unshift({ w: null, r: e.repMin, t: null, warm: true, done: false }); ctx.persist(); repaint(); }),
         e.sets.length > 1 ? item('Remove last set', () => { e.sets.pop(); ctx.persist(); repaint(); }) : null,
         item('Skip this exercise', () => { e.skipped = true; ctx.persist(); repaint(); }, true))].filter(Boolean);
