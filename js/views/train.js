@@ -114,7 +114,7 @@ export async function trainView({ nav }) {
   return h('div', { class: 'home' }, top, hero, strip, planSec,
     !active && sessions.length >= 3 ? insightsCarousel({ sessions, exercises: exMap, gyms, nextId: next, gym, planned }) : null,
     active ? null : h('h2', {}, 'Or instead'),
-    active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-dot' }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
+    active ? null : h('div', { class: 'pair' }, ...others.map((r) => h('button', { class: 'tile', style: `--rc:${RCOL[r]}`, onclick: () => start(r, nav) }, h('span', { class: 'tile-ic', html: icon(r) }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)))),
     h('h2', {}, 'Extras'),
     h('div', { class: 'card plain' },
       row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),

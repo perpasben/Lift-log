@@ -414,3 +414,10 @@ button.row:active.alt-row { background: none; }
 .menu-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(16, 15, 14, .97) 26%, rgba(16, 15, 14, .78) 46%, rgba(16, 15, 14, .1) 66%, rgba(16, 15, 14, .1) 100%); }
 .menu-hero .how { color: #d8d4cf; }
 .sheet .grab { position: relative; z-index: 1; }
+
+/* routine icons */
+.tile-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 10px; color: var(--rc); background: color-mix(in srgb, var(--rc) 16%, transparent); }
+.tile-ic svg.i { width: 19px; height: 19px; stroke-width: 2; }
+.pair.v-b .tile { overflow: hidden; }
+.pair.v-b .tile-ic { position: absolute; right: -6px; bottom: -10px; width: 72px; height: 72px; margin: 0; background: none; opacity: .2; }
+.pair.v-b .tile-ic svg.i { width: 72px; height: 72px; stroke-width: 1.6; }
