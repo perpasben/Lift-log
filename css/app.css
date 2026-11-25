@@ -457,3 +457,21 @@ button.row:active.alt-row { background: none; }
 .mm-dates input { height: 44px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); color: var(--tx); padding: 0 10px; font: inherit; font-size: 16px; min-width: 0; }
 .mm-err { color: var(--bad); min-height: 20px; margin: 8px 0 0; font-size: 14px; }
 .zero { opacity: .55; }
+
+/* finishing a workout: the screen's data leaves, the summary rises in */
+@keyframes wkOut { to { opacity: 0; transform: translateY(-14px) scale(.985); } }
+.wk-out { animation: wkOut .28s cubic-bezier(.4, 0, 1, 1) forwards; pointer-events: none; }
+@keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.rise { animation: riseIn .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 80ms + 60ms); }
+.enter-rise { animation: none; }
+.sum { padding-top: 6px; }
+.sum-e { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--mu); }
+.sum-h { font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -.045em; margin: 8px 0 18px; }
+.sum-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sum-stats > div { background: var(--s1); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; display: grid; gap: 2px; }
+.sum-stats b { font-size: 30px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.sum-stats span { color: var(--mu); font-size: 13px; }
+.sum .mm { transition: fill .9s ease; }
+.sum-pend { margin: 12px 2px 0; }
+.sum-done { margin-top: 18px; }
+@media (prefers-reduced-motion: reduce) { .rise, .wk-out { animation: none; } .wk-out { opacity: 0; } .sum .mm { transition: none; } }

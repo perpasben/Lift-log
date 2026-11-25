@@ -26,6 +26,8 @@ const rememberScroll = () => { cur().at(-1).scroll = scroller().scrollTop; };
 export const nav = {
   canBack: () => cur().length > 1,
   push(view, anim) { rememberScroll(); cur().push({ view, scroll: 0, anim }); render(); },
+  /** Swap the current screen for another one (the workout turns into its summary). */
+  replace(view, anim) { cur().pop(); cur().push({ view, scroll: 0, anim }); refreshRest(); render(); },
   back() { if (cur().length > 1) { const was = inWorkout(); cur().pop(); refreshRest(was); render(); } },
   refresh() { rememberScroll(); render(); },
   /** Go to a tab and reset it to its first screen (used when a workout ends). */

@@ -12,9 +12,26 @@ const DAY = 86400000;
 const shortDate = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 const isoDay = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-function figures(counts, light) {
-  const muscles = Object.entries(MM.muscles).map(([key, d]) => `<path class="mm" data-m="${key}" fill="${mapHeat(counts[key] || 0, light)}" d="${d}"/>`);
+function figures(counts, light, full = 10) {
+  const muscles = Object.entries(MM.muscles).map(([key, d]) => `<path class="mm" data-m="${key}" fill="${mapHeat(counts[key] || 0, light, '#ff6b1f', full)}" d="${d}"/>`);
   return `<path fill="#16161a" d="${MM.sil}"/><path fill="#25252b" d="${MM.inert}"/>${muscles.join('')}`;
+}
+
+/** The body map with its labels, a tap readout and the colour legend. `full` = sets that give the strongest colour. */
+export function mapBlock(counts, { light = accent2().hex, full = 10, text = 'Tap a muscle.' } = {}) {
+  const readout = h('div', { class: 'mm-read' }, text);
+  const svg = h('div', { class: 'mm-svg', html: `<svg viewBox="${MM.viewBox}" role="img" aria-label="Muscle map, front and back">${figures(counts, light, full)}</svg>` });
+  svg.querySelectorAll('.mm').forEach((p) => p.addEventListener('click', () => { const k = p.dataset.m; readout.replaceChildren(h('b', {}, MUSCLE_LABEL[k]), ` \u00b7 ${fmtSets(counts[k] || 0)} set${(counts[k] || 0) === 1 ? '' : 's'}`); }));
+  const el = h('div', { class: 'mm-fig' }, svg, h('div', { class: 'mm-lab' }, h('span', { style: `left:${lab('front')}%` }, 'Front'), h('span', { style: `left:${lab('back')}%` }, 'Back')), readout,
+    h('div', { class: 'mm-leg' }, h('span', {}, '0'), h('i', {}), h('span', {}, `${full}+ sets`)));
+  el.svg = svg; el.paintTo = (c) => { svg.querySelectorAll('.mm').forEach((p) => p.setAttribute('fill', mapHeat(c[p.dataset.m] || 0, light, '#ff6b1f', full))); };
+  return el;
+}
+
+/** One bar per muscle group; the colour is the one the busiest muscle of the group has on the map. */
+export function groupBars(rows, { light = accent2().hex, full = 10 } = {}) {
+  const max = rows[0]?.total || 1;
+  return h('div', { class: 'card plain', style: 'margin-top:10px' }, ...rows.map((g) => h('div', { class: 'row', style: 'min-height:44px;padding:10px 2px' }, h('div', { class: 't', style: 'width:96px' }, g.name), h('div', { class: 'mm-bar' }, g.total > 0 ? h('i', { style: `width:${Math.max(6, (g.total / max) * 100)}%;background:${mapHeat(g.top, light, '#ff6b1f', full)}` }) : null), h('div', { class: `muted mono ${g.total > 0 ? '' : 'zero'}`, style: 'width:78px;white-space:nowrap;text-align:right' }, `${fmtSets(g.total)} set${g.total === 1 ? '' : 's'}`))));
 }
 
 export async function muscleMapSection() {
@@ -33,15 +50,10 @@ export async function muscleMapSection() {
   const paint = () => {
     label.textContent = periodLabel();
     const { counts, sessions: n, sets: total } = muscleLoad(sessions, exs, periodRange(period, Date.now(), custom));
-    const readout = h('div', { class: 'mm-read' }, n ? `${total} sets across ${n} workout${n > 1 ? 's' : ''}. Tap a muscle.` : 'Nothing trained in this period.');
-    const svg = h('div', { class: 'mm-svg', html: `<svg viewBox="${MM.viewBox}" role="img" aria-label="Muscle map, front and back">${figures(counts, light)}</svg>` });
-    svg.querySelectorAll('.mm').forEach((p) => p.addEventListener('click', () => { const k = p.dataset.m; readout.replaceChildren(h('b', {}, MUSCLE_LABEL[k]), ` \u00b7 ${fmtSets(counts[k] || 0)} set${(counts[k] || 0) === 1 ? '' : 's'}`); }));
     const rows = groupLoad(counts, expected);
-    const max = rows[0]?.total || 1;
     box.replaceChildren(
-      h('div', { class: 'mm-fig' }, svg, h('div', { class: 'mm-lab' }, h('span', { style: `left:${lab('front')}%` }, 'Front'), h('span', { style: `left:${lab('back')}%` }, 'Back')), readout,
-        h('div', { class: 'mm-leg' }, h('span', {}, '0'), h('i', {}), h('span', {}, '10+ sets'))),
-      rows.length ? h('div', { class: 'card plain', style: 'margin-top:10px' }, ...rows.map((g) => h('div', { class: 'row', style: 'min-height:44px;padding:10px 2px' }, h('div', { class: 't', style: 'width:96px' }, g.name), h('div', { class: 'mm-bar' }, g.total > 0 ? h('i', { style: `width:${Math.max(6, (g.total / max) * 100)}%;background:${mapHeat(g.top, light)}` }) : null), h('div', { class: `muted mono ${g.total > 0 ? '' : 'zero'}`, style: 'width:78px;white-space:nowrap;text-align:right' }, `${fmtSets(g.total)} set${g.total === 1 ? '' : 's'}`)))) : null,
+      mapBlock(counts, { light, text: n ? `${total} sets across ${n} workout${n > 1 ? 's' : ''}. Tap a muscle.` : 'Nothing trained in this period.' }),
+      rows.length ? groupBars(rows, { light }) : null,
       rows.length ? h('p', { class: 'mm-note' }, 'A set counts for every muscle the exercise works, weighted by how much: dips give chest the most, then triceps and shoulders.') : null);
   };
 

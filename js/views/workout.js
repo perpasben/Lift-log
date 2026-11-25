@@ -10,6 +10,7 @@ import { exercisePhoto, pickPhoto } from '../photos.js';
 import { alternativesFor, KIND_LABEL } from '../alternatives.js';
 import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
+import { summaryView } from './summary.js';
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 const num = (v) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
@@ -305,14 +306,11 @@ async function finish(ctx) {
   await db.kvSet('settings', { ...settings, lastGymId: gym.id });
   await clearActive();
 
+  // the workout's data leaves the screen, then the summary takes its place
   const st = stats(session);
-  sheet((close) => [h('h3', {}, 'Workout saved'), h('div', { class: 'stat3' },
-    h('div', {}, h('b', { class: 'num' }, String(st.minutes)), h('span', {}, 'minutes')),
-    h('div', {}, h('b', { class: 'num' }, String(st.sets)), h('span', {}, 'sets')),
-    h('div', {}, h('b', { class: 'num' }, st.volume.toLocaleString('en-GB')), h('span', {}, 'kg volume'))),
-  pend.length ? h('p', { class: 'muted' }, `${pend.filter((p) => p.target !== 'extra').length} carried to the next workout, ${pend.filter((p) => p.target === 'extra').length} parked in Extra.`) : null,
-  h('button', { class: 'btn pri block', onclick: close }, 'Done')]);
-  ctx.nav.tab('train');
+  const screen = document.getElementById('view')?.firstElementChild;
+  if (screen && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { screen.classList.add('wk-out'); await new Promise((r) => setTimeout(r, 280)); }
+  ctx.nav.replace(summaryView({ session, st, gym, exs, routineId: w.routineId, pend }), 'rise');
 }
 
 async function applyRoutineChanges(w, gym, ch, exs) {
