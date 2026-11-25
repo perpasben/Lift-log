@@ -171,6 +171,22 @@ export function mapHeat(count, light = '#ffc9a2', strong = '#ff6b1f', full = 10,
   return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
 }
 
+/**
+ * How long today's workout will probably take, from how long your past workouts took (median, so a long outlier does not skew it).
+ * 1) the same routine at the same gym, 2) workouts with about as many exercises, 3) your pace per exercise, 4) a rough guess.
+ */
+export function estimateMinutes(sessions, { routineId, gymId, count, sets = 0 }) {
+  const mins = (s) => Math.round((s.end - s.start) / 60000);
+  const med = (a) => { const v = [...a].sort((x, y) => x - y), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+  const lifting = sessions.filter((s) => s.entries?.length && mins(s) >= 15 && mins(s) <= 150).sort((a, b) => b.start - a.start);
+  const same = lifting.filter((s) => s.routineId === routineId && s.gymId === gymId).slice(0, 6);
+  if (same.length >= 2) return { minutes: Math.round(med(same.map(mins))), basis: 'routine' };
+  const alike = lifting.filter((s) => Math.abs(s.entries.length - count) <= 1).slice(0, 8);
+  if (alike.length >= 3) return { minutes: Math.round(med(alike.map(mins))), basis: 'size' };
+  if (lifting.length >= 3 && count) return { minutes: Math.round(med(lifting.map((s) => mins(s) / s.entries.length)) * count), basis: 'pace' };
+  return { minutes: Math.round((sets || count * 3) * 3), basis: 'guess' };
+}
+
 /** "today", "yesterday", "3 days ago" */
 export function ago(ms, now = Date.now()) {
   const d = Math.floor((now - ms) / 86400000);

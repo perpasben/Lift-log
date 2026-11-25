@@ -400,3 +400,20 @@ test('groupLoad: groups you should train stay in the list at 0; plannedGroups re
   const map = { [akey('s1', 'g1')]: 'press', [akey('s2', 'g1')]: 'row', [akey('s3', 'g2')]: 'curl' };
   assert.deepEqual(plannedGroups(routines, map, exs, [{ id: 'g1' }, { id: 'g2' }]).sort(), ['Arms', 'Back', 'Chest']);
 });
+
+import { estimateMinutes } from '../js/logic/stats.js';
+test('estimateMinutes: same routine first, then workouts of similar size, then your pace per exercise', () => {
+  const min = 60000;
+  const s = (id, routineId, gymId, n, m, day) => ({ id, routineId, gymId, start: day * 86400000, end: day * 86400000 + m * min, entries: Array.from({ length: n }, () => ({ sets: [{ done: true }] })) });
+  const hist = [s('a', 'push', 'big', 5, 50, 10), s('b', 'push', 'big', 5, 56, 9), s('c', 'push', 'big', 4, 44, 8), s('d', 'pull', 'big', 5, 40, 7)];
+  // same routine and gym: median of 50, 56, 44
+  assert.deepEqual(estimateMinutes(hist, { routineId: 'push', gymId: 'big', count: 5 }), { minutes: 50, basis: 'routine' });
+  // another routine never done there: the workouts with 4-6 exercises (all four) -> median of 40, 44, 50, 56 = 47
+  assert.deepEqual(estimateMinutes(hist, { routineId: 'leg', gymId: 'big', count: 5 }), { minutes: 47, basis: 'size' });
+  // a very different size: your pace per exercise (about 10, 11.2, 11, 8 -> 10.5) x 9 exercises
+  assert.equal(estimateMinutes(hist, { routineId: 'leg', gymId: 'big', count: 9 }).basis, 'pace');
+  assert.equal(estimateMinutes(hist, { routineId: 'leg', gymId: 'big', count: 9 }).minutes, 95);
+  // not enough history: rough guess; outliers (under 15 or over 150 minutes) and workouts without lifting are ignored
+  assert.equal(estimateMinutes([], { routineId: 'push', gymId: 'big', count: 4, sets: 14 }).basis, 'guess');
+  assert.equal(estimateMinutes([s('x', 'push', 'big', 5, 5, 1), s('y', 'push', 'big', 5, 400, 2)], { routineId: 'push', gymId: 'big', count: 5 }).basis, 'guess');
+});

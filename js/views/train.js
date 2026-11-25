@@ -12,7 +12,7 @@ import { akey } from '../logic/substitution.js';
 import { heroPhoto, photos } from '../photos.js';
 import { icon } from '../icons.js';
 import { howTo } from '../howto.js';
-import { weeklyCounts, muscleLoad } from '../logic/stats.js';
+import { weeklyCounts, muscleLoad, estimateMinutes, dayKey } from '../logic/stats.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 // Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
@@ -76,15 +76,17 @@ export async function trainView({ nav }) {
   // today's plan at the gym you will use
   const plan = (routine.gymBlocks?.[gym?.id] || routine.blocks).flatMap((b) => b.items.map((it) => ({ id: asg[akey(it.slotId, gym?.id)], sets: b.rounds, repMin: it.repMin, repMax: it.repMax }))).filter((p) => p.id);
   const totalSets = plan.reduce((n, p) => n + p.sets, 0);
-  const lens = sessions.filter((s) => s.routineId === next && s.gymId === gym?.id).sort((a, b) => b.start - a.start).slice(0, 6).map((s) => Math.round((s.end - s.start) / 60000)).filter((m) => m >= 15 && m <= 120).sort((a, b) => a - b);
-  const minutes = lens.length ? lens[Math.floor(lens.length / 2)] : Math.round(totalSets * 3);
+  const minutes = estimateMinutes(sessions, { routineId: next, gymId: gym?.id, count: (plan.length || routine.blocks.length) + carried, sets: totalSets }).minutes;
+  // trained already today? then this is what comes next; otherwise it is today's training, trained or not
+  const today = dayKey(Date.now());
+  const doneToday = !active && sessions.some((s) => s.entries.length && dayKey(s.start) === today);
 
   const top = h('div', { class: 'home-top' }, h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('b', {}, 'LiftLog')));
 
   const photo = heroPhoto(shownId);
   const name = NAMES[shownId] || 'Workout';
   const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
-    h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`),
+    h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : (doneToday ? 'Done for today \u00b7 next up' : `Today\u2019s training \u00b7 ${gym?.name}`)),
     h('div', { class: 'hp-h' }, `${name} day.`),
     h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
     h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
@@ -100,7 +102,7 @@ export async function trainView({ nav }) {
     h('div', {}, h('span', { class: 'si', html: icon('train') }), h('b', { class: 'num' }, String(sets2w)), h('span', {}, 'sets, 2 weeks'))) : null;
 
   const planSec = active || !plan.length ? null : h('div', {},
-    h('div', { class: 'sec-h' }, h('b', {}, 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
+    h('div', { class: 'sec-h' }, h('b', {}, doneToday ? 'Next workout' : 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
     h('div', { class: 'plan' }, ...plan.map((p, i) => {
       const ex = exMap[p.id];
       return h('button', { class: 'plan-row', onclick: () => sheet((close) => [h('h3', {}, ex.name), h('p', { class: 'muted', style: 'margin:0 0 10px' }, `${p.sets} sets${p.repMax ? ` \u00b7 ${p.repMin === p.repMax ? p.repMax : `${p.repMin}\u2013${p.repMax}`} reps` : ''}`), h('p', { class: 'how' }, howTo(ex) || 'No description yet.'), h('button', { class: 'btn block', style: 'margin-top:16px', onclick: close }, 'Close')]) },
