@@ -17,4 +17,5 @@ const P = {
   timer: '<circle cx="12" cy="13.5" r="6.5"/><path d="M12 10.5v3.2l2 1.3M9.5 3.5h5"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
 };
+export const hasIcon = (n) => Object.hasOwn(P, n);
 export const icon = (n) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;

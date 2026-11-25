@@ -1,6 +1,6 @@
 import * as db from '../db.js';
 import { h, topbar, fmtDate, fmtDur, confirmSheet, toast } from '../ui.js';
-import { icon } from '../icons.js';
+import { icon, hasIcon } from '../icons.js';
 import { muscleMapSection } from './musclemap.js';
 import { fmtSet } from './workout.js';
 import { stats } from '../logic/workout.js';
@@ -14,6 +14,7 @@ const today = new Date();
 let cal = { y: today.getFullYear(), m: today.getMonth(), sel: dayKey(Date.now()) };
 const RCOL = { push: '#ff6b1f', pull: '#7aa2ff', leg: '#5fd6a1' };
 const colorOf = (s) => RCOL[s.routineId] || '#a1a1aa';
+const chipOf = (s) => (hasIcon(s.routineId) ? h('span', { class: 'rchip sm', style: `--rc:${colorOf(s)}`, html: icon(s.routineId) }) : h('span', { class: 'rchip sm', style: `--rc:${colorOf(s)}` }, h('i', { class: 'cal-dot lg', style: `background:${colorOf(s)}` })));
 const chartSel = {};
 
 const setsLine = (type, sets) => sets.map((s) => (s.warm ? `W ${fmtSet(type, s)}` : fmtSet(type, s))).join('  ·  ');
@@ -39,7 +40,7 @@ function calendar(ctx) {
     const cell = g.weeks.flat().find((c) => c.key === key);
     dayList.replaceChildren(...(cell?.sessions.length ? [h('h2', {}, new Date(key + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })),
       h('div', { class: 'card plain' }, ...cell.sessions.map((s) => h('button', { class: 'row', onclick: () => ctx.nav.push(() => sessionView(ctx, s.id)) },
-        h('span', { class: 'cal-dot lg', style: `background:${colorOf(s)}` }),
+        chipOf(s),
         h('div', { class: 'grow' }, h('div', { class: 't' }, label(s)), h('div', { class: 'd' }, `${ctx.gname[s.gymId] || ''} \u00b7 ${fmtDur(s.start, s.end)}`)),
         h('span', { class: 'chev', html: icon('chev') }))))] : []));
   };
@@ -55,7 +56,7 @@ function calendar(ctx) {
     h('div', { class: 'cal-nav' }, h('button', { class: 'ibtn', 'aria-label': 'Previous month', html: icon('back'), onclick: () => go(-1) }), h('div', { class: 'cal-t' }, h('b', {}, title), h('span', { class: 'muted' }, `${g.count} workouts \u00b7 ${dur}`)),
       h('button', { class: 'ibtn', 'aria-label': 'Next month', html: icon('chev'), onclick: () => go(1) })),
     grid,
-    h('div', { class: 'cal-key' }, ...[['Push', RCOL.push], ['Pull', RCOL.pull], ['Leg', RCOL.leg], ['Other', '#a1a1aa']].map(([n, c]) => h('span', {}, h('i', { class: 'cal-dot', style: `background:${c}` }), n))),
+    h('div', { class: 'cal-key' }, ...[['Push', RCOL.push, 'push'], ['Pull', RCOL.pull, 'pull'], ['Leg', RCOL.leg, 'leg'], ['Other', '#a1a1aa']].map(([n, c, ic]) => h('span', {}, ic ? h('i', { class: 'key-ic', style: `color:${c}`, html: icon(ic) }) : h('i', { class: 'cal-dot', style: `background:${c}` }), n))),
     dayList);
 }
 
@@ -70,7 +71,7 @@ function workouts(ctx) {
     const sets = s.entries.reduce((n, e) => n + e.sets.filter((x) => !x.warm).length, 0);
     card.append(h('button', { class: 'row', onclick: () => ctx.nav.push(() => sessionView(ctx, s.id)) },
       h('div', { class: 'dayc' }, h('b', { class: 'num' }, String(d.getDate())), h('span', {}, d.toLocaleDateString('en-GB', { weekday: 'short' }))),
-      h('span', { class: 'cal-dot lg', style: `background:${colorOf(s)}` }),
+      chipOf(s),
       h('div', { class: 'grow' }, h('div', { class: 't' }, label(s)), h('div', { class: 'd' }, [ctx.gname[s.gymId], fmtDur(s.start, s.end), sets ? `${sets} sets` : null].filter(Boolean).join(' \u00b7 '))),
       h('span', { class: 'chev', html: icon('chev') })));
   }

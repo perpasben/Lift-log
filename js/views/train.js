@@ -10,7 +10,7 @@ import { insightsCarousel } from './carousel.js';
 import { accent2 } from '../theme.js';
 import { akey } from '../logic/substitution.js';
 import { heroPhoto } from '../photos.js';
-import { icon } from '../icons.js';
+import { icon, hasIcon } from '../icons.js';
 import { howTo } from '../howto.js';
 import { weeklyCounts, muscleLoad } from '../logic/stats.js';
 
@@ -84,7 +84,7 @@ export async function trainView({ nav }) {
   const photo = heroPhoto(shownId);
   const name = NAMES[shownId] || 'Workout';
   const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
-    h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`),
+    h('div', { class: 'hp-top' }, ['push', 'pull', 'leg'].includes(shownId) ? h('span', { class: 'rchip', style: `--rc:${RCOL[shownId]}`, html: icon(shownId) }) : null, h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`)),
     h('div', { class: 'hp-h' }, `${name} day.`),
     h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
     h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
