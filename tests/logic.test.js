@@ -365,3 +365,38 @@ test('muscleLoad: an exercise counts for every muscle it works, once in the tota
   assert.equal(r.counts.abs, undefined);
   assert.equal(r.sets, 6);                   // 4 dip sets + 2 curl sets; warm-up, undone and mobility not counted
 });
+
+import { periodRange, PERIODS, groupLoad as gl2, plannedGroups } from '../js/logic/stats.js';
+test('periodRange: rolling days, this year, since start and a custom range (both days included)', () => {
+  const now = new Date(2026, 10, 25, 12).getTime();
+  assert.deepEqual(periodRange('d28', now), { days: 28 });
+  assert.deepEqual(periodRange('m12', now), { days: 365 });
+  assert.deepEqual(periodRange('year', now), { from: new Date(2026, 0, 1).getTime(), to: now });
+  assert.deepEqual(periodRange('all', now), { from: 0, to: now });
+  const c = periodRange('custom', now, { from: '2026-11-01', to: '2026-11-10' });
+  assert.equal(c.from, new Date(2026, 10, 1).getTime());
+  assert.equal(c.to, new Date(2026, 10, 10, 23, 59, 59, 999).getTime());
+  assert.equal(PERIODS.length, 8);
+});
+
+test('muscleLoad: absolute ranges include only sessions inside them', () => {
+  const now = new Date(2026, 10, 25, 12).getTime(), d = 86400000;
+  const exs = { x: { id: 'x', name: 'Triceps Pushdown With Bar', muscle: 'Triceps' } };
+  const sess = (ago) => ({ start: now - ago * d, entries: [{ exerciseId: 'x', sets: [{ done: true }, { done: true }] }] });
+  const all = [sess(1), sess(20), sess(200)];
+  assert.equal(muscleLoad(all, exs, periodRange('d7', now), now).counts.triceps, 2);
+  assert.equal(muscleLoad(all, exs, periodRange('d28', now), now).counts.triceps, 4);
+  assert.equal(muscleLoad(all, exs, periodRange('all', now), now).counts.triceps, 6);
+  const mid = periodRange('custom', now, { from: new Date(now - 25 * d).toISOString().slice(0, 10), to: new Date(now - 15 * d).toISOString().slice(0, 10) });
+  assert.equal(muscleLoad(all, exs, mid, now).counts.triceps, 2);
+});
+
+test('groupLoad: groups you should train stay in the list at 0; plannedGroups reads them from the routines', () => {
+  const g = gl2({ chest: 4 }, ['Chest', 'Back', 'Legs']);
+  assert.deepEqual(g.map((x) => [x.name, x.total]), [['Chest', 4], ['Back', 0], ['Legs', 0]]);
+  assert.deepEqual(gl2({ chest: 4 }, []).map((x) => x.name), ['Chest']);
+  const routines = [{ id: 'push', blocks: [{ items: [{ slotId: 's1' }] }] }, { id: 'pull', blocks: [{ items: [{ slotId: 's2' }] }], gymBlocks: { g2: [{ items: [{ slotId: 's3' }] }] } }];
+  const exs = { press: { id: 'bench-press', name: 'Bench Press', muscle: 'Chest' }, row: { id: 'seated-machine-row', name: 'Seated Machine Row', muscle: 'Back' }, curl: { id: 'barbell-curl', name: 'Barbell Curl', muscle: 'Biceps' } };
+  const map = { [akey('s1', 'g1')]: 'press', [akey('s2', 'g1')]: 'row', [akey('s3', 'g2')]: 'curl' };
+  assert.deepEqual(plannedGroups(routines, map, exs, [{ id: 'g1' }, { id: 'g2' }]).sort(), ['Arms', 'Back', 'Chest']);
+});

@@ -444,3 +444,16 @@ button.row:active.alt-row { background: none; }
 .mm-lab span { position: absolute; top: 0; transform: translateX(-50%); }
 
 .mm-note { color: var(--mu); font-size: 13px; line-height: 1.4; margin: 10px 2px 0; }
+
+/* muscle map: period dropdown */
+.mm-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.mm-head h2 { margin-bottom: 8px; }
+.mm-sel { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 14px; margin-bottom: 8px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); color: var(--tx); font-size: 15px; font-weight: 600; max-width: 62%; }
+.mm-sel > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-chev svg.i { width: 16px; height: 16px; stroke: var(--ac2); transform: rotate(90deg); display: block; }
+.sel-ok svg.i { width: 20px; height: 20px; stroke: var(--ac2); display: block; }
+.mm-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.mm-dates label { display: grid; gap: 6px; color: var(--mu); font-size: 13px; }
+.mm-dates input { height: 44px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); color: var(--tx); padding: 0 10px; font: inherit; font-size: 16px; min-width: 0; }
+.mm-err { color: var(--bad); min-height: 20px; margin: 8px 0 0; font-size: 14px; }
+.zero { opacity: .55; }

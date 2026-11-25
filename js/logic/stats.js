@@ -1,5 +1,6 @@
 import { suggestNext } from './progression.js';
 import { weightsFor } from './muscles.js';
+import { akey } from './substitution.js';
 // Calendar and progress helpers. Pure functions over stored sessions.
 export const dayKey = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -78,10 +79,38 @@ export const MAP_GROUPS = [
   ['Chest', ['chest']], ['Back', ['lats', 'upperBack', 'lowerBack']], ['Shoulders', ['shoulders', 'rearDelts', 'neck']],
   ['Arms', ['biceps', 'triceps', 'forearms']], ['Core', ['abs']], ['Legs', ['quads', 'hamstrings', 'glutes', 'calves', 'adductors', 'hips', 'shins']],
 ];
-/** Sets per group (sorted high to low, untrained groups left out) and the busiest muscle of each, whose colour the bar uses. */
-export function groupLoad(counts) {
+/**
+ * Sets per group (sorted high to low) and the busiest muscle of each, whose colour the bar uses.
+ * `expected` = groups you are supposed to train: they stay in the list at 0 when untouched. Other untrained groups are left out.
+ */
+export function groupLoad(counts, expected = []) {
   return MAP_GROUPS.map(([name, keys]) => ({ name, total: keys.reduce((n, k) => n + (counts[k] || 0), 0), top: Math.max(0, ...keys.map((k) => counts[k] || 0)) }))
-    .filter((g) => g.total > 0).sort((a, b) => b.total - a.total);
+    .filter((g) => g.total > 0 || expected.includes(g.name)).sort((a, b) => b.total - a.total);
+}
+
+/** The groups your routines train: the main muscle (weight 1) of every exercise in every gym's plan. */
+export function plannedGroups(routines, assignments, exercises, gyms) {
+  const keys = new Set();
+  for (const r of routines) for (const g of gyms) for (const b of (r.gymBlocks?.[g.id] || r.blocks || [])) for (const it of b.items) {
+    const ex = exercises[assignments[akey(it.slotId, g.id)]];
+    const w = weightsFor(ex) || (muscleKeyOf(ex) ? { [muscleKeyOf(ex)]: 1 } : null);
+    for (const [k, v] of Object.entries(w || {})) if (v === 1) keys.add(k);
+  }
+  return MAP_GROUPS.filter(([, ks]) => ks.some((k) => keys.has(k))).map(([name]) => name);
+}
+
+/** Periods for the muscle map. */
+export const PERIODS = [['d7', 'The last 7 days'], ['d14', 'The last 14 days'], ['d28', 'The last 28 days'], ['d90', 'The last 90 days'], ['year', 'This year'], ['m12', 'The last 12 months'], ['all', 'Since start'], ['custom', 'Custom period']];
+/** muscleLoad range for a period id. `custom` = {from, to} as YYYY-MM-DD (local days, both included). */
+export function periodRange(id, now = Date.now(), custom = null) {
+  const days = { d7: 7, d14: 14, d28: 28, d90: 90, m12: 365 }[id];
+  if (days) return { days };
+  if (id === 'year') return { from: new Date(new Date(now).getFullYear(), 0, 1).getTime(), to: now };
+  if (id === 'custom' && custom?.from && custom?.to) {
+    const [fy, fm, fd] = custom.from.split('-').map(Number), [ty, tm, td] = custom.to.split('-').map(Number);
+    return { from: new Date(fy, fm - 1, fd).getTime(), to: new Date(ty, tm - 1, td, 23, 59, 59, 999).getTime() };
+  }
+  return { from: 0, to: now }; // since start
 }
 
 /** Which back muscle an exercise trains: lower back (deadlifts, extensions), upper back (rows, shrugs) or lats (pulls, pulldowns, hangs). */
@@ -101,6 +130,7 @@ export function muscleKeyOf(ex) {
 export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   let used = [...sessions].filter((s) => s.entries.length).sort((a, b) => b.start - a.start);
   if (range.workouts) used = used.slice(0, range.workouts);
+  else if (range.from != null) used = used.filter((s) => s.start >= range.from && s.start <= (range.to ?? now));
   else used = used.filter((s) => s.start > now - range.days * 86400000 && s.start <= now);
   // counts: weighted sets per muscle (see muscles.js); sets: plain working sets, each counted once
   const counts = {}, last = {};
