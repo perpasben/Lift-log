@@ -69,8 +69,18 @@ export function niceRange(min, max, ticks = 3) {
 }
 
 /* ---------- muscle load (map of what was trained) ---------- */
-export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Back: 'back', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs' };
-export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', back: 'Back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves' };
+export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs' };
+export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', lats: 'Lats', upperBack: 'Upper back', lowerBack: 'Lower back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves' };
+
+/** Which back muscle an exercise trains: lower back (deadlifts, extensions), upper back (rows, shrugs) or lats (pulls, pulldowns, hangs). */
+export function muscleKeyOf(ex) {
+  if (!ex) return null;
+  if (ex.muscle !== 'Back') return MUSCLE_KEY[ex.muscle] || null;
+  const n = `${ex.id || ''} ${ex.name || ''}`.toLowerCase();
+  if (/deadlift|good.?morning|hyperext|back.?extension|superman/.test(n)) return 'lowerBack';
+  if (/\brow\b|shrug|face.?pull|upright|rack.?pull/.test(n)) return 'upperBack';
+  return 'lats';
+}
 
 /**
  * Working sets per muscle over a rolling window.
@@ -82,7 +92,7 @@ export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   else used = used.filter((s) => s.start > now - range.days * 86400000 && s.start <= now);
   const counts = {}, last = {};
   for (const s of used) for (const e of s.entries) {
-    const key = MUSCLE_KEY[exercises[e.exerciseId]?.muscle];
+    const key = muscleKeyOf(exercises[e.exerciseId]);
     if (!key) continue;
     const n = e.sets.filter((x) => !x.warm && x.done !== false).length;
     if (n) { counts[key] = (counts[key] || 0) + n; last[key] = Math.max(last[key] || 0, s.start); }
@@ -117,7 +127,7 @@ export function ago(ms, now = Date.now()) {
 }
 
 /* ---------- "Tip": what got a lot of work and what was neglected ---------- */
-export const TIP_GROUPS = { chest: ['chest'], back: ['back'], shoulders: ['shoulders', 'rearDelts'], arms: ['biceps', 'triceps'], legs: ['quads', 'hamstrings', 'glutes', 'calves'] };
+export const TIP_GROUPS = { chest: ['chest'], back: ['lats', 'upperBack', 'lowerBack'], shoulders: ['shoulders', 'rearDelts'], arms: ['biceps', 'triceps'], legs: ['quads', 'hamstrings', 'glutes', 'calves'] };
 const TIP_COVERS = { push: ['chest', 'shoulders', 'arms'], pull: ['back', 'arms', 'shoulders'], leg: ['legs'] };
 const TIP_NEXT = { push: 'Push', pull: 'Pull', leg: 'Leg' };
 const listWords = (a) => (a.length === 2 ? `${a[0]} and ${a[1]}` : a[0]);

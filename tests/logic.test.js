@@ -220,15 +220,15 @@ test('muscleLoad: rolling days across week boundaries, warm-ups ignored, last-N 
 
 import { trainingTip } from '../js/logic/stats.js';
 test('trainingTip: a lot vs neglected, next routine, and silence when there is nothing to say', () => {
-  const pushPull = { chest: 11, shoulders: 6, rearDelts: 4, triceps: 8, biceps: 8, back: 12 };
+  const pushPull = { chest: 11, shoulders: 6, rearDelts: 4, triceps: 8, biceps: 8, lats: 12 };
   assert.equal(trainingTip(pushPull, 'leg'), 'You trained arms and back a lot in the past two weeks and neglected legs. Leg is up next, which helps.');
   assert.equal(trainingTip(pushPull, 'push'), 'You trained arms and back a lot in the past two weeks and neglected legs.');
-  assert.equal(trainingTip({ chest: 4, back: 4, shoulders: 3, biceps: 2, triceps: 2, quads: 4 }, 'pull'), null); // balanced
-  assert.equal(trainingTip({ chest: 3, back: 2 }, 'push'), null); // too little data
-  assert.equal(trainingTip({ chest: 6, back: 6, shoulders: 6, biceps: 6, quads: 6, triceps: 0 }, 'pull'), null);
-  const onlyLittle = trainingTip({ chest: 6, back: 6, shoulders: 6, biceps: 3, triceps: 3, quads: 0 }, 'push');
+  assert.equal(trainingTip({ chest: 4, lats: 4, shoulders: 3, biceps: 2, triceps: 2, quads: 4 }, 'pull'), null); // balanced
+  assert.equal(trainingTip({ chest: 3, lats: 2 }, 'push'), null); // too little data
+  assert.equal(trainingTip({ chest: 6, lats: 6, shoulders: 6, biceps: 6, quads: 6, triceps: 0 }, 'pull'), null);
+  const onlyLittle = trainingTip({ chest: 6, lats: 6, shoulders: 6, biceps: 3, triceps: 3, quads: 0 }, 'push');
   assert.equal(onlyLittle, "You haven't trained legs much in the past two weeks.");
-  assert.equal(trainingTip({ chest: 30, back: 5, shoulders: 5, biceps: 5, quads: 5 }, 'leg'), 'You trained chest the most in the past two weeks. Nothing is falling behind.');
+  assert.equal(trainingTip({ chest: 30, lats: 5, shoulders: 5, biceps: 5, quads: 5 }, 'leg'), 'You trained chest the most in the past two weeks. Nothing is falling behind.');
 });
 
 import { weeklyCounts, progressInsight, lastTimeNote, ROUTINE_MUSCLES } from '../js/logic/stats.js';
@@ -313,4 +313,18 @@ test('mapHeat: grey when idle, light accent for few sets, full accent from 10 se
   assert.equal(mapHeat(0.001), '#ffc9a2');
   const mid = mapHeat(5);
   assert.notEqual(mid, '#ffc9a2'); assert.notEqual(mid, '#ff6b1f');
+});
+
+test('muscleKeyOf: splits the back into lats, upper back and lower back', async () => {
+  const { muscleKeyOf } = await import('../js/logic/stats.js');
+  const ex = (name, muscle = 'Back') => ({ id: name.toLowerCase().replace(/ /g, '-'), name, muscle });
+  assert.equal(muscleKeyOf(ex('Pull-Up')), 'lats');
+  assert.equal(muscleKeyOf(ex('Lat Pulldown')), 'lats');
+  assert.equal(muscleKeyOf(ex('Straight Arm Lat Pulldown')), 'lats');
+  assert.equal(muscleKeyOf(ex('Seated Machine Row')), 'upperBack');
+  assert.equal(muscleKeyOf(ex('Barbell Row')), 'upperBack');
+  assert.equal(muscleKeyOf(ex('Deadlift')), 'lowerBack');
+  assert.equal(muscleKeyOf(ex('Bench Press', 'Chest')), 'chest');
+  assert.equal(muscleKeyOf(ex('Face Pull', 'Rear delts')), 'rearDelts');
+  assert.equal(muscleKeyOf(null), null);
 });
