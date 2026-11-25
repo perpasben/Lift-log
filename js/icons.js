@@ -1,7 +1,7 @@
 const P = {
-  push: '<path d="M4 5v14"/><path d="M9 12h11M15 6.5l5.5 5.5-5.5 5.5"/>',
-  pull: '<path d="M4 5v14"/><path d="M20.5 12H8.5M13.5 6.5L8 12l5.5 5.5"/>',
-  leg: '<path d="M12 4v11M7 10.5l5 5 5-5M5.5 20h13"/>',
+  push: '<circle cx="18.6" cy="8" r="1.9"/><path d="M16 10.3L4.5 16.8M15.8 10.5V19M3 19.5h18"/>',
+  pull: '<path d="M4 3.5h16M8 3.5v4l2.6 2.6M16 3.5v4l-2.6 2.6M10.6 10.1h2.8M12 10.1v5.6M12 15.7l-2.2 5M12 15.7l2.2 5"/><circle cx="12" cy="6.9" r="1.8"/>',
+  leg: '<circle cx="11.2" cy="4.4" r="1.9"/><path d="M10.6 7.2L8 13M8 13l6.2.6M14.2 13.6L12.4 20M12.4 20h3.2M10 9.4l5.4.8"/>',
   train: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
   history: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   library: '<path d="M5 4.5h4v15H5zM11 4.5h4v15h-4z"/><path d="M17.2 5.6l3.4 1-3.2 12.8-3.4-1"/>',

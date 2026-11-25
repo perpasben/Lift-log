@@ -416,8 +416,8 @@ button.row:active.alt-row { background: none; }
 .sheet .grab { position: relative; z-index: 1; }
 
 /* routine icons */
-.tile-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 10px; color: var(--rc); background: color-mix(in srgb, var(--rc) 16%, transparent); }
-.tile-ic svg.i { width: 19px; height: 19px; stroke-width: 2; }
+.tile-ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 10px; color: var(--rc); background: color-mix(in srgb, var(--rc) 16%, transparent); }
+.tile-ic svg.i { width: 26px; height: 26px; stroke-width: 1.7; }
 .pair.v-b .tile { overflow: hidden; }
 .pair.v-b .tile-ic { position: absolute; right: -6px; bottom: -10px; width: 72px; height: 72px; margin: 0; background: none; opacity: .2; }
 .pair.v-b .tile-ic svg.i { width: 72px; height: 72px; stroke-width: 1.6; }
