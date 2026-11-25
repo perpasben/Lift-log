@@ -328,3 +328,10 @@ test('muscleKeyOf: splits the back into lats, upper back and lower back', async 
   assert.equal(muscleKeyOf(ex('Face Pull', 'Rear delts')), 'rearDelts');
   assert.equal(muscleKeyOf(null), null);
 });
+
+test('groupLoad: few groups for the list, busiest muscle sets the colour', async () => {
+  const { groupLoad } = await import('../js/logic/stats.js');
+  const g = groupLoad({ chest: 10, lats: 7, upperBack: 3, quads: 4, hamstrings: 2, forearms: 1, neck: 2, abs: 0 });
+  assert.deepEqual(g.map((x) => [x.name, x.total, x.top]), [['Chest', 10, 10], ['Back', 10, 7], ['Legs', 6, 4], ['Shoulders', 2, 2], ['Arms', 1, 1]]);
+  assert.deepEqual(groupLoad({}), []);
+});

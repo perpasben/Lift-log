@@ -72,6 +72,17 @@ export function niceRange(min, max, ticks = 3) {
 export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs', Forearms: 'forearms', Adductors: 'adductors', 'Hip flexors': 'hips', Shins: 'shins', Neck: 'neck' };
 export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', lats: 'Lats', upperBack: 'Upper back', lowerBack: 'Lower back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves', forearms: 'Forearms', adductors: 'Adductors', hips: 'Hip flexors', shins: 'Shins', neck: 'Neck' };
 
+/** The few bars under the muscle map: the map is detailed, the list is not. */
+export const MAP_GROUPS = [
+  ['Chest', ['chest']], ['Back', ['lats', 'upperBack', 'lowerBack']], ['Shoulders', ['shoulders', 'rearDelts', 'neck']],
+  ['Arms', ['biceps', 'triceps', 'forearms']], ['Core', ['abs']], ['Legs', ['quads', 'hamstrings', 'glutes', 'calves', 'adductors', 'hips', 'shins']],
+];
+/** Sets per group (sorted high to low, untrained groups left out) and the busiest muscle of each, whose colour the bar uses. */
+export function groupLoad(counts) {
+  return MAP_GROUPS.map(([name, keys]) => ({ name, total: keys.reduce((n, k) => n + (counts[k] || 0), 0), top: Math.max(0, ...keys.map((k) => counts[k] || 0)) }))
+    .filter((g) => g.total > 0).sort((a, b) => b.total - a.total);
+}
+
 /** Which back muscle an exercise trains: lower back (deadlifts, extensions), upper back (rows, shrugs) or lats (pulls, pulldowns, hangs). */
 export function muscleKeyOf(ex) {
   if (!ex) return null;
