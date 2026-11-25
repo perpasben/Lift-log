@@ -417,3 +417,40 @@ test('estimateMinutes: same routine first, then workouts of similar size, then y
   assert.equal(estimateMinutes([], { routineId: 'push', gymId: 'big', count: 4, sets: 14 }).basis, 'guess');
   assert.equal(estimateMinutes([s('x', 'push', 'big', 5, 5, 1), s('y', 'push', 'big', 5, 400, 2)], { routineId: 'push', gymId: 'big', count: 5 }).basis, 'guess');
 });
+
+import { planTopUp, WEEK_TARGET, PRIORITY } from '../js/logic/topup.js';
+import { seedGyms } from '../js/seed.js';
+test('planTopUp: fills the biggest gaps, one exercise per muscle, legs and back before arms', () => {
+  const [office, big] = seedGyms();
+  const trained = { chest: 12, lats: 10, upperBack: 8, quads: 9, hamstrings: 8, glutes: 7, shoulders: 10, biceps: 8, triceps: 9, rearDelts: 5, abs: 1, calves: 2, lowerBack: 4, forearms: 3, adductors: 3, shins: 0 };
+  const plan = planTopUp({ counts: trained, exercises: CATALOG, gym: big });
+  assert.equal(plan.items.length, 3);
+  assert.equal(plan.complete, false);
+  assert.deepEqual(plan.items.map((i) => i.main).sort(), ['abs', 'calves', 'rearDelts']);       // abs and calves barely trained, then the rear delts
+  assert.equal(new Set(plan.items.map((i) => i.main)).size, 3);
+  assert.ok(plan.items.every((i) => i.sets >= 2 && i.sets <= 4));
+  assert.deepEqual(plan.gaps.slice(0, 2).map((g) => g.key), ['abs', 'calves']);
+  // equipment: the office has cables but no leg press, so the calves come from another exercise
+  const o = planTopUp({ counts: trained, exercises: CATALOG, gym: office });
+  assert.ok(!o.items.some((i) => i.exerciseId === 'calf-raise-in-leg-press'));
+  // legs matter more than chest: with both empty, the quads come first
+  const empty = Object.fromEntries(Object.keys(trained).map((k) => [k, 10]));
+  const both = planTopUp({ counts: { ...empty, chest: 0, quads: 0, hamstrings: 0 }, exercises: CATALOG, gym: big });
+  assert.equal(both.items[0].main, 'quads');
+  assert.deepEqual(both.items.map((i) => i.main).sort(), ['chest', 'hamstrings', 'quads']);
+  assert.ok(PRIORITY.quads > PRIORITY.biceps && WEEK_TARGET.chest === 10);
+});
+
+test('planTopUp: when every muscle is covered it suggests posture and mobility, the one you did longest ago first', () => {
+  const [, big] = seedGyms();
+  const full = Object.fromEntries(Object.keys(WEEK_TARGET).map((k) => [k, 12]));
+  const plan = planTopUp({ counts: full, exercises: CATALOG, gym: big });
+  assert.equal(plan.complete, true);
+  assert.deepEqual(plan.items.map((i) => i.kind), ['posture', 'mobility', 'mobility']);
+  const day = 86400000, now = Date.now();
+  const did = (id, ago) => ({ start: now - ago * day, entries: [{ exerciseId: id, sets: [{ done: true }] }] });
+  const hist = [did('face-pull', 2), did('cable-external-shoulder-rotation', 30), did('open-book', 3), did('cat-cow', 1)];
+  const p2 = planTopUp({ counts: full, exercises: CATALOG, gym: big, sessions: hist, now });
+  assert.equal(p2.items[0].exerciseId, 'cable-external-shoulder-rotation');
+  assert.ok(!p2.items.slice(1).some((i) => i.exerciseId === 'cat-cow' || i.exerciseId === 'open-book')); // recently done: others come first
+});

@@ -7,7 +7,7 @@ import { startTimer, remaining, addSeconds, fmt } from './logic/timer.js';
 let pill, label, bar, timerId, actBar, actName, actTime, hooks = {};
 const LINGER_MS = 4000;
 
-const ROUTINE_NAME = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
+const ROUTINE_NAME = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Pending exercises', topup: 'Complete the week' };
 const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60; return hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`; };
 
 /** hooks: { showBar(): bool (false while the workout screen itself is open), openWorkout(): void } from the navigation layer. */

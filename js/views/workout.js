@@ -12,7 +12,7 @@ import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
 import { summaryView } from './summary.js';
 
-const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
+const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Pending exercises', topup: 'Complete the week' };
 const num = (v) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
 const mmss = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const h2 = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); return `${h2 ? `${h2}:` : ''}${String(m).padStart(h2 ? 2 : 1, '0')}:${String(s % 60).padStart(2, '0')}`; };
 
@@ -235,8 +235,8 @@ function swipeable(row, actions) {
 
 function chooseDecisions(w, list) {
   return new Promise((res) => {
-    const dec = Object.fromEntries(list.map((u) => [u.entry.id, 'carry']));
-    const opts = [['carry', w.routineId === 'extra' ? 'Next extra' : 'Next workout'], ['extra', 'Extra workout'], ['drop', 'Drop']];
+    const opts = w.routineId === 'topup' ? [['extra', 'Pending'], ['drop', 'Drop']] : w.routineId === 'extra' ? [['carry', 'Keep pending'], ['drop', 'Drop']] : [['carry', 'Next workout'], ['extra', 'Pending'], ['drop', 'Drop']];
+    const dec = Object.fromEntries(list.map((u) => [u.entry.id, opts[0][0]]));
     let settled = false;
     const done = (v, close) => { if (!settled) { settled = true; res(v); } close(); };
     sheet((close) => [
@@ -294,7 +294,7 @@ async function finish(ctx) {
   const end = Date.now();
   const session = toSession(w, end);
   const pend = buildPending(w, decisions, end);
-  const ch = w.routineId === 'extra' ? { swaps: [], added: [] } : routineChanges(w);
+  const ch = ['extra', 'topup'].includes(w.routineId) ? { swaps: [], added: [] } : routineChanges(w);
   if (ch.swaps.length || ch.added.length) {
     if (await askUpdateRoutine(gym, ch, exs)) await applyRoutineChanges(w, gym, ch, exs);
   }

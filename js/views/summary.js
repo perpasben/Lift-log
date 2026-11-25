@@ -2,7 +2,7 @@ import { h } from '../ui.js';
 import { muscleLoad, groupLoad } from '../logic/stats.js';
 import { mapBlock } from './musclemap.js';
 
-const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
+const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Pending exercises', topup: 'Complete the week' };
 const SESSION_FULL = 6; // effective sets of one muscle in a single workout that give the strongest colour
 const reduced = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -27,7 +27,7 @@ export function summaryView({ session, st, gym, exs, routineId, pend = [] }) {
   return ({ nav }) => {
     const counts = muscleLoad([session], exs, { workouts: 1 }).counts;
     const rows = groupLoad(counts);
-    const title = routineId === 'extra' ? 'Extra workout.' : `${NAMES[routineId] || 'Workout'} day.`;
+    const title = ['push', 'pull', 'leg'].includes(routineId) ? `${NAMES[routineId]} day.` : `${NAMES[routineId] || 'Workout'}.`;
     let i = 0;
     const rise = (el) => { el.classList.add('rise'); el.style.setProperty('--i', String(i++)); return el; };
     const stat = (value, one, many, fmt) => { const b = h('b', { class: 'num' }, ''); countUp(b, value, fmt); return h('div', {}, b, h('span', {}, value === 1 ? one : many)); };
@@ -42,7 +42,7 @@ export function summaryView({ session, st, gym, exs, routineId, pend = [] }) {
       rise(h('div', { class: 'sum-stats' }, stat(st.minutes, 'minute', 'minutes'), stat(st.sets, 'set', 'sets'), stat(st.volume, 'kg volume', 'kg volume', (v) => v.toLocaleString('en-GB')))),
       rise(h('h2', {}, 'Muscles worked')),
       rise(map),
-      pend.length ? rise(h('p', { class: 'muted sum-pend' }, `${carried} carried to the next workout${parked ? `, ${parked} parked in Extra` : ''}.`)) : null,
+      pend.length ? rise(h('p', { class: 'muted sum-pend' }, `${carried} carried to the next workout${parked ? `, ${parked} kept as pending` : ''}.`)) : null,
       rise(h('button', { class: 'btn pri block sum-done', onclick: () => nav.tab('train') }, 'Done')));
   };
 }

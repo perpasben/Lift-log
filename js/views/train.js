@@ -1,7 +1,8 @@
 import * as db from '../db.js';
 import { h, sheet, toast } from '../ui.js';
 import { nextRoutine, pendingFor, ROTATION } from '../logic/carryover.js';
-import { buildWorkout } from '../logic/workout.js';
+import { buildWorkout, buildTopUpWorkout } from '../logic/workout.js';
+import { planTopUp } from '../logic/topup.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
 import { extrasView } from './extras.js';
@@ -12,7 +13,7 @@ import { akey } from '../logic/substitution.js';
 import { heroPhoto, photos } from '../photos.js';
 import { icon } from '../icons.js';
 import { howTo } from '../howto.js';
-import { weeklyCounts, muscleLoad, estimateMinutes, dayKey } from '../logic/stats.js';
+import { weeklyCounts, muscleLoad, estimateMinutes, dayKey, fmtSets, MUSCLE_LABEL } from '../logic/stats.js';
 
 const RCOL = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 // Segmented ring: one segment per workout in the last 7 days, out of a goal of 4.
@@ -28,7 +29,7 @@ function weekRing(done, goal = 4) {
   return h('span', { class: 'ring', role: 'img', 'aria-label': `${done} of ${goal} workouts in the last 7 days`, html: `<svg viewBox="0 0 44 44" width="44" height="44">${paths}</svg>` });
 }
 
-const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
+const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Pending exercises', topup: 'Complete the week' };
 
 function chooseGym(gyms, preselected, routineName) {
   return new Promise((res) => {
@@ -50,14 +51,36 @@ async function start(routineId, nav) {
   const gymId = await chooseGym(gyms, gyms.some((g) => g.id === settings.lastGymId) ? settings.lastGymId : gyms[0]?.id, NAMES[routineId] || routineId);
   if (!gymId) return;
   const gym = gyms.find((g) => g.id === gymId);
-  const w = buildWorkout({
-    routineId, routine: routines.find((r) => r.id === routineId) || null, gym,
-    assignments: Object.fromEntries(asg.map((a) => [a.id, a.exerciseId])),
-    exercises: Object.fromEntries(exList.map((e) => [e.id, e])), sessions, pending,
-  });
+  const exMap = Object.fromEntries(exList.map((e) => [e.id, e]));
+  let w;
+  if (routineId === 'topup') {
+    const counts = muscleLoad(sessions, exMap, { days: 7 }).counts;
+    const plan = planTopUp({ counts, exercises: exList, gym, sessions });
+    if (!plan.items.length) { toast('Nothing to suggest with this gym\u2019s equipment'); return; }
+    w = buildTopUpWorkout({ plan, gym, exercises: exMap, sessions });
+  } else {
+    w = buildWorkout({
+      routineId, routine: routines.find((r) => r.id === routineId) || null, gym,
+      assignments: Object.fromEntries(asg.map((a) => [a.id, a.exerciseId])),
+      exercises: exMap, sessions, pending,
+    });
+  }
   await db.kvSet('settings', { ...settings, lastGymId: gymId });
   await setActive(w);
   nav.push(workoutView, 'up');
+}
+
+function openTopUp(plan, exMap, nav) {
+  const why = (it) => {
+    if (it.kind === 'gap') return `${it.sets} sets \u00b7 ${MUSCLE_LABEL[it.reason.key]}: ${fmtSets(it.reason.done)} of ${it.reason.target} sets this week`;
+    return `${it.sets} sets \u00b7 ${it.kind === 'posture' ? 'posture and shoulder health' : 'mobility'}`;
+  };
+  sheet((close) => [h('h3', {}, 'Complete the week'),
+    h('p', { class: 'muted', style: 'margin:0 0 12px' }, plan.complete
+      ? 'Your last 7 days cover every muscle. A short session for posture and mobility.'
+      : 'Muscles the last 7 days left behind, to even out the body map. Legs and back first.'),
+    h('div', { class: 'card' }, ...plan.items.map((it, i) => h('div', { class: 'row' }, h('span', { class: 'pn num' }, String(i + 1)), h('div', { class: 'grow' }, h('div', { class: 't' }, exMap[it.exerciseId]?.name || it.exerciseId), h('div', { class: 'd' }, why(it)))))),
+    h('button', { class: 'btn pri block', style: 'margin-top:16px', onclick: () => { close(); start('topup', nav); } }, 'Start')]);
 }
 
 export async function trainView({ nav }) {
@@ -87,7 +110,7 @@ export async function trainView({ nav }) {
   const name = NAMES[shownId] || 'Workout';
   const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
     h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : (doneToday ? 'Done for today \u00b7 next up' : `Today\u2019s training \u00b7 ${gym?.name}`)),
-    h('div', { class: 'hp-h' }, `${name} day.`),
+    h('div', { class: 'hp-h' }, ['push', 'pull', 'leg'].includes(shownId) ? `${name} day.` : `${name}.`),
     h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
     h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
 
@@ -111,6 +134,10 @@ export async function trainView({ nav }) {
         h('span', { class: 'chev', html: icon('chev') }));
     })));
 
+  const weekCounts = muscleLoad(sessions, exMap, { days: 7 }).counts;
+  const topPlan = planTopUp({ counts: weekCounts, exercises: exAll, gym, sessions });
+  // the row names what the plan works on, so it matches the sheet
+  const topupHint = [...new Set(topPlan.items.map((i) => (i.kind === 'gap' ? MUSCLE_LABEL[i.main] : i.kind === 'posture' ? 'Posture' : 'Mobility')))].join(' \u00b7 ') || 'Nothing to suggest here';
   const row = (title, desc, fn) => h('button', { class: 'row', onclick: fn }, h('div', { class: 'grow' }, h('div', { class: 't' }, title), desc ? h('div', { class: 'd' }, desc) : null));
   const planned = plan.map((p) => ({ id: p.id, repMin: p.repMin, repMax: p.repMax }));
   return h('div', { class: 'home' }, top, hero, strip, planSec,
@@ -119,7 +146,8 @@ export async function trainView({ nav }) {
     active ? null : h('div', { class: 'pair' }, ...others.map((r) => { const ph = photos()[r] || null; return h('button', { class: `tile ${ph ? 'has-photo' : ''}`, style: `--rc:${RCOL[r]}${ph ? `;background-image:linear-gradient(0deg,rgba(0,0,0,.92) 8%,rgba(0,0,0,.55) 48%,rgba(0,0,0,.1) 100%),url(${ph})` : ''}`, onclick: () => start(r, nav) }, ph ? null : h('span', { class: 'tile-ic', html: icon(r) }), h('span', { class: 'tile-n' }, NAMES[r]), h('span', { class: 'tile-s' }, `${routines.find((x) => x.id === r)?.blocks.reduce((n, b) => n + b.items.length, 0)} exercises`)); })),
     h('h2', {}, 'Extras'),
     h('div', { class: 'card plain' },
-      row('Extra workout', extra ? `${extra} parked` : 'Nothing parked', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
+      row('Pending exercises', extra ? `${extra} waiting` : 'Nothing waiting', () => (active ? toast('Finish the current workout first') : start('extra', nav))),
+      row('Complete the week', topupHint, () => (active ? toast('Finish the current workout first') : openTopUp(topPlan, exMap, nav))),
       row('Extras', 'Mobility, abs, farmer\u2019s walk', () => nav.push(extrasView))),
     await muscleMapSection());
 }

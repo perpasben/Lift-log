@@ -91,6 +91,20 @@ export function buildWorkout({ routineId, routine, gym, assignments, exercises, 
   return { id: uid('w'), routineId, gymId: gym.id, start: now, blocks, entries, rest: null };
 }
 
+/** A "Complete the week" workout from a plan (see topup.js): one block per exercise, prefilled from the last time. */
+export function buildTopUpWorkout({ plan, gym, exercises, sessions, now = Date.now() }) {
+  const blocks = [], entries = [];
+  for (const it of plan.items) {
+    const type = exercises[it.exerciseId]?.type || 'wr';
+    const last = lastFor(sessions, it.exerciseId, gym.id);
+    const e = { id: uid(), blockId: null, slotId: null, exerciseId: it.exerciseId, baseExerciseId: it.exerciseId, repMin: it.repMin, repMax: it.repMax, skipped: false,
+      sets: makeSets(it.sets, { type, last, repMin: it.repMin ?? 8, repMax: it.repMax ?? 12, increment: gym.increment }) };
+    const b = { id: uid('b'), label: '', kind: 'superset', rounds: it.sets, entryIds: [e.id] };
+    e.blockId = b.id; blocks.push(b); entries.push(e);
+  }
+  return { id: uid('w'), routineId: 'topup', gymId: gym.id, start: now, blocks, entries, rest: null };
+}
+
 export const entryOf = (w, id) => w.entries.find((e) => e.id === id);
 
 /** After checking set `i`, is the whole round of the block finished (so rest should start)? */

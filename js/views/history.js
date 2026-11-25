@@ -6,7 +6,7 @@ import { fmtSet } from './workout.js';
 import { stats } from '../logic/workout.js';
 import { monthGrid, dayKey, exerciseSeries, metricsFor, niceRange } from '../logic/stats.js';
 
-const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout', mobility: 'Mobility', abs: 'Abs', farmer: "Farmer's walk" };
+const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Pending exercises', topup: 'Complete the week', mobility: 'Mobility', abs: 'Abs', farmer: "Farmer's walk" };
 const label = (s) => NAMES[s.routineId] || (s.title || 'Workout').replace(/^.*?:\s*/, '');
 let mode = 'calendar';
 let q = '';
