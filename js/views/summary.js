@@ -1,6 +1,6 @@
 import { h } from '../ui.js';
 import { muscleLoad, groupLoad } from '../logic/stats.js';
-import { mapBlock, groupBars } from './musclemap.js';
+import { mapBlock } from './musclemap.js';
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 const SESSION_FULL = 6; // effective sets of one muscle in a single workout that give the strongest colour
@@ -42,7 +42,6 @@ export function summaryView({ session, st, gym, exs, routineId, pend = [] }) {
       rise(h('div', { class: 'sum-stats' }, stat(st.minutes, 'minute', 'minutes'), stat(st.sets, 'set', 'sets'), stat(st.volume, 'kg volume', 'kg volume', (v) => v.toLocaleString('en-GB')))),
       rise(h('h2', {}, 'Muscles worked')),
       rise(map),
-      rows.length ? rise(groupBars(rows, { full: SESSION_FULL })) : null,
       pend.length ? rise(h('p', { class: 'muted sum-pend' }, `${carried} carried to the next workout${parked ? `, ${parked} parked in Extra` : ''}.`)) : null,
       rise(h('button', { class: 'btn pri block sum-done', onclick: () => nav.tab('train') }, 'Done')));
   };
