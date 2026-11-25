@@ -429,3 +429,7 @@ button.row:active.alt-row { background: none; }
 .rchip.sm svg.i { width: 21px; height: 21px; }
 .key-ic svg.i { width: 18px; height: 18px; stroke-width: 1.8; display: block; }
 .key-ic { display: inline-flex; }
+
+/* Or instead: a routine photo fills the tile */
+.tile.has-photo { min-height: 128px; justify-content: flex-end; background-color: #111; background-size: cover; background-position: 88% 30%; overflow: hidden; border-color: #2a2a2e; }
+.tile.has-photo .tile-s { color: rgba(255, 255, 255, .7); }
