@@ -1,4 +1,4 @@
-const VERSION = '0.11.0';
+const VERSION = '0.11.1';
 const BUILD = '__BUILD__';
 const CACHE = `liftlog-${VERSION}-${BUILD}`;
 const ASSETS = [

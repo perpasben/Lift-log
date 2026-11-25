@@ -10,7 +10,7 @@ const LINGER_MS = 4000;
 const ROUTINE_NAME = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
 const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60; return hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`; };
 
-/** hooks: { isOtherTab(): bool, openWorkout(): void } supplied by the navigation layer. */
+/** hooks: { showBar(): bool (false while the workout screen itself is open), openWorkout(): void } from the navigation layer. */
 export function initRest(h2 = {}) {
   hooks = h2;
   actName = h('b', {}, '');
@@ -74,8 +74,8 @@ function tick(animate = false) {
     }
   }
   pill.hidden = !restShown;
-  // no rest timer running: show the active-workout bar, but only outside the Train tab (Train already shows the workout)
-  const showAct = !!a && !restShown && !!hooks.isOtherTab?.();
+  // no rest timer running: show the active-workout bar anywhere except the workout screen itself
+  const showAct = !!a && !restShown && !!hooks.showBar?.();
   const wasShown = !actBar.hidden;
   actBar.hidden = !showAct;
   if (showAct && !wasShown && animate) { actBar.classList.remove('reveal'); void actBar.offsetWidth; actBar.classList.add('reveal'); }

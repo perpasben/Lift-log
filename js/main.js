@@ -18,13 +18,15 @@ const TABS = [['train', 'Train', trainView], ['history', 'History', historyView]
 // Each tab keeps its own navigation stack, so switching tabs never loses your place.
 const stacks = Object.fromEntries(TABS.map(([id, , view]) => [id, [{ view, scroll: 0 }]]));
 const state = { tab: 'train' };
+/** true while the running workout's own screen is open (the only place the active-workout bar is not needed) */
+const inWorkout = () => state.tab === 'train' && cur().at(-1).view === workoutView;
 const cur = () => stacks[state.tab];
 const scroller = () => document.getElementById('view');
 const rememberScroll = () => { cur().at(-1).scroll = scroller().scrollTop; };
 export const nav = {
   canBack: () => cur().length > 1,
-  push(view) { rememberScroll(); cur().push({ view, scroll: 0 }); render(); },
-  back() { if (cur().length > 1) { cur().pop(); render(); } },
+  push(view, anim) { rememberScroll(); cur().push({ view, scroll: 0, anim }); render(); },
+  back() { if (cur().length > 1) { const was = inWorkout(); cur().pop(); refreshRest(was); render(); } },
   refresh() { rememberScroll(); render(); },
   /** Go to a tab and reset it to its first screen (used when a workout ends). */
   tab(id) { stacks[id].length = 1; stacks[id][0].scroll = 0; state.tab = id; render(); },
@@ -47,9 +49,9 @@ function selectTab(id) {
     return;
   }
   rememberScroll();
-  const leavingTrain = state.tab === 'train' && id !== 'train';
+  const was = inWorkout();
   state.tab = id;
-  refreshRest(leavingTrain); // reveal the bar when leaving Train; hide it instantly when coming back
+  refreshRest(was); // reveal the bar when leaving the workout screen; hide it instantly when coming back to it
   render();
 }
 
@@ -62,6 +64,10 @@ async function render() {
   const view = scroller();
   view.replaceChildren(el);
   view.scrollTop = entry.scroll;
+  if (entry.anim) { // quick opening animation for screens pushed with one (e.g. starting a workout)
+    const cls = `enter-${entry.anim}`; entry.anim = null;
+    el.classList.add(cls); el.addEventListener('animationend', () => el.classList.remove(cls), { once: true });
+  }
   const tabs = document.getElementById('tabs');
   refreshRest();
   tabs.replaceChildren(...TABS.map(([id, label]) => h('button', { 'aria-current': String(id === state.tab), onclick: () => selectTab(id), html: `${icon(id)}<span>${label}</span>` })));
@@ -76,9 +82,10 @@ async function boot() {
   if (getActive()) stacks.train.push({ view: workoutView, scroll: 0 }); // reopen the running workout
   render();
   initRest({
-    isOtherTab: () => state.tab !== 'train',
+    showBar: () => !inWorkout(),
     openWorkout: () => {
-      if (!stacks.train.some((e) => e.view === workoutView)) stacks.train.push({ view: workoutView, scroll: 0 });
+      const open = stacks.train.find((e) => e.view === workoutView);
+      if (open) open.anim = 'up'; else stacks.train.push({ view: workoutView, scroll: 0, anim: 'up' });
       state.tab = 'train'; render();
     },
   });

@@ -57,7 +57,7 @@ async function start(routineId, nav) {
   });
   await db.kvSet('settings', { ...settings, lastGymId: gymId });
   await setActive(w);
-  nav.push(workoutView);
+  nav.push(workoutView, 'up');
 }
 
 export async function trainView({ nav }) {
@@ -87,7 +87,7 @@ export async function trainView({ nav }) {
     h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : `Up next \u00b7 ${gym?.name}`),
     h('div', { class: 'hp-h' }, `${name} day.`),
     h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
-    h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView) : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
+    h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
 
   // three real numbers, one strip
   const lifting = sessions.filter((s) => s.entries.length);

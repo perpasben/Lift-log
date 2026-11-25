@@ -404,3 +404,7 @@ button.row:active.alt-row { background: none; }
 .menu-h h3 { margin: 0; }
 .cam { width: 34px; height: 34px; border-radius: 50%; background: var(--s2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--mu); flex: none; }
 .cam svg.i { width: 17px; height: 17px; }
+
+/* quick opening animation for a screen pushed with one */
+.enter-up { animation: enter-up .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes enter-up { from { opacity: 0; transform: translateY(26px) scale(.985); } }
