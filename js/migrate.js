@@ -1,5 +1,5 @@
 import * as db from './db.js';
-import { BIG_PLAN, bigVariant, bigSlots, bigAssignments } from './seed.js';
+import { BIG_PLAN, bigVariant, bigSlots, bigAssignments, CATALOG, ADDED_IN_4 } from './seed.js';
 
 /** No supersets: every exercise is its own block of normal sets. */
 export function flattenBlocks(blocks) {
@@ -27,5 +27,8 @@ export async function migrate() {
     const g = await db.get('gyms', 'big');
     if (g && g.name === 'Big gym') { g.name = 'Sportrade'; await db.put('gyms', g); }
   }
-  await db.kvSet('schema', 3);
+  if (v < 4) { // new built-in exercises for forearms, adductors, hip flexors, shins and neck
+    for (const ex of CATALOG) if (ADDED_IN_4.includes(ex.id) && !(await db.get('exercises', ex.id))) await db.put('exercises', ex);
+  }
+  await db.kvSet('schema', 4);
 }

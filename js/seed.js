@@ -99,6 +99,13 @@ Sit-Up|abdominales|Abs|bodyweight|rr
 Decline Bench Sit-Up|abdominales banco declinado|Abs|bench|rr
 Farmer's Walk|paseo del granjero|Full body|kettlebell|t
 Kettlebell Swing|swing kettlebell|Full body|kettlebell|wr
+Wrist Curl|curl de muneca|Forearms|dumbbell|wr
+Reverse Wrist Curl|curl de muneca inverso|Forearms|dumbbell|wr
+Cable Reverse Curl|curl inverso polea|Forearms|cable|wr
+Cable Hip Adduction|aduccion de cadera polea|Adductors|cable|wr
+Cable Hip Flexion|flexion de cadera polea|Hip flexors|cable|wr
+Tibialis Raise|elevacion de tibial|Shins|bodyweight|rr
+Neck Curl|flexion de cuello|Neck|bodyweight|rr
 Cat-Cow|gato-vaca|Mobility|bodyweight|rr
 90/90 Hip Switch|90/90 cadera|Mobility|bodyweight|rr
 Lunge With Thoracic Rotation|zancada con rotacion toracica|Mobility|bodyweight|rr
@@ -106,6 +113,9 @@ Open Book|libro abierto|Mobility|bodyweight|rr
 Hip Flexor Stretch|estiramiento flexores cadera|Mobility|bodyweight|t
 Hamstring Stretch|estiramiento isquios|Mobility|bodyweight|t
 `.trim();
+
+/** Built-in exercises added after the first release (added to existing data by migrate()). */
+export const ADDED_IN_4 = ['wrist-curl', 'reverse-wrist-curl', 'cable-reverse-curl', 'cable-hip-adduction', 'cable-hip-flexion', 'tibialis-raise', 'neck-curl'];
 
 export const CATALOG = RAW.split('\n').map((l) => {
   const [name, al, muscle, eq, type] = l.split('|');

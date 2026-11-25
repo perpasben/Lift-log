@@ -69,8 +69,8 @@ export function niceRange(min, max, ticks = 3) {
 }
 
 /* ---------- muscle load (map of what was trained) ---------- */
-export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs' };
-export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', lats: 'Lats', upperBack: 'Upper back', lowerBack: 'Lower back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves' };
+export const MUSCLE_KEY = { Chest: 'chest', Shoulders: 'shoulders', 'Rear delts': 'rearDelts', 'Rotator cuff': 'rearDelts', Triceps: 'triceps', Biceps: 'biceps', Quads: 'quads', Hamstrings: 'hamstrings', Glutes: 'glutes', Calves: 'calves', Abs: 'abs', Forearms: 'forearms', Adductors: 'adductors', 'Hip flexors': 'hips', Shins: 'shins', Neck: 'neck' };
+export const MUSCLE_LABEL = { chest: 'Chest', shoulders: 'Shoulders', rearDelts: 'Rear delts', biceps: 'Biceps', triceps: 'Triceps', lats: 'Lats', upperBack: 'Upper back', lowerBack: 'Lower back', abs: 'Abs', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves', forearms: 'Forearms', adductors: 'Adductors', hips: 'Hip flexors', shins: 'Shins', neck: 'Neck' };
 
 /** Which back muscle an exercise trains: lower back (deadlifts, extensions), upper back (rows, shrugs) or lats (pulls, pulldowns, hangs). */
 export function muscleKeyOf(ex) {

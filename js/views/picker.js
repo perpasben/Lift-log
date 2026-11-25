@@ -5,7 +5,7 @@ import { slug } from '../logic/csv.js';
 import { EQUIPMENT } from '../seed.js';
 import { pickPhoto } from '../photos.js';
 
-export const MUSCLES = ['Chest', 'Shoulders', 'Rear delts', 'Rotator cuff', 'Triceps', 'Back', 'Biceps', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Abs', 'Full body', 'Mobility'];
+export const MUSCLES = ['Chest', 'Shoulders', 'Rear delts', 'Rotator cuff', 'Triceps', 'Back', 'Biceps', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Abs', 'Forearms', 'Adductors', 'Hip flexors', 'Shins', 'Neck', 'Full body', 'Mobility'];
 const TYPES = [['wr', 'Weight + reps'], ['bw', 'Bodyweight (+ extra kg)'], ['rr', 'Reps only'], ['t', 'Time']];
 
 /**
