@@ -335,3 +335,33 @@ test('groupLoad: few groups for the list, busiest muscle sets the colour', async
   assert.deepEqual(g.map((x) => [x.name, x.total, x.top]), [['Chest', 10, 10], ['Back', 10, 7], ['Legs', 6, 4], ['Shoulders', 2, 2], ['Arms', 1, 1]]);
   assert.deepEqual(groupLoad({}), []);
 });
+
+import { MUSCLE_WEIGHTS, weightsFor } from '../js/logic/muscles.js';
+import { CATALOG } from '../js/seed.js';
+import { MUSCLE_LABEL as LABELS } from '../js/logic/stats.js';
+test('muscle weights: every real exercise is covered, with a main muscle and valid keys', () => {
+  for (const ex of CATALOG) {
+    if (ex.muscle === 'Mobility') continue;
+    const w = MUSCLE_WEIGHTS[ex.id];
+    assert.ok(w, `${ex.name} has no weights`);
+    assert.ok(Object.values(w).includes(1), `${ex.name} has no main muscle (weight 1)`);
+    for (const [k, v] of Object.entries(w)) { assert.ok(LABELS[k], `${ex.name}: unknown muscle ${k}`); assert.ok(v > 0 && v <= 1, `${ex.name}: bad weight for ${k}`); }
+  }
+  for (const id of Object.keys(MUSCLE_WEIGHTS)) assert.ok(CATALOG.some((e) => e.id === id), `${id} is not in the catalog`);
+});
+
+test('muscleLoad: an exercise counts for every muscle it works, once in the total', () => {
+  const now = new Date(2026, 10, 25, 12).getTime();
+  const exs = { 'bar-dip': { id: 'bar-dip', name: 'Bar Dip', muscle: 'Chest' }, mine: { id: 'mine', name: 'Cable Thing', muscle: 'Biceps' }, 'full': { id: 'full', name: 'Mobility', muscle: 'Mobility' } };
+  const set = (done = true, warm = false) => ({ w: 0, r: 10, warm, done });
+  const s = { start: now - 1000, entries: [
+    { exerciseId: 'bar-dip', sets: [set(), set(), set(), set(), set(true, true), set(false)] },
+    { exerciseId: 'mine', sets: [set(), set()] },
+    { exerciseId: 'full', sets: [set(), set()] },
+  ] };
+  const r = muscleLoad([s], exs, { days: 7 }, now);
+  assert.equal(r.counts.chest, 4); assert.equal(r.counts.triceps, 3); assert.equal(r.counts.shoulders, 2);
+  assert.equal(r.counts.biceps, 2);          // not in the table: its own muscle at weight 1
+  assert.equal(r.counts.abs, undefined);
+  assert.equal(r.sets, 6);                   // 4 dip sets + 2 curl sets; warm-up, undone and mobility not counted
+});

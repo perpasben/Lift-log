@@ -1,4 +1,5 @@
 import { suggestNext } from './progression.js';
+import { weightsFor } from './muscles.js';
 // Calendar and progress helpers. Pure functions over stored sessions.
 export const dayKey = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -101,15 +102,24 @@ export function muscleLoad(sessions, exercises, range, now = Date.now()) {
   let used = [...sessions].filter((s) => s.entries.length).sort((a, b) => b.start - a.start);
   if (range.workouts) used = used.slice(0, range.workouts);
   else used = used.filter((s) => s.start > now - range.days * 86400000 && s.start <= now);
+  // counts: weighted sets per muscle (see muscles.js); sets: plain working sets, each counted once
   const counts = {}, last = {};
+  let sets = 0;
   for (const s of used) for (const e of s.entries) {
-    const key = muscleKeyOf(exercises[e.exerciseId]);
-    if (!key) continue;
+    const ex = exercises[e.exerciseId];
+    const own = muscleKeyOf(ex);
+    const w = weightsFor(ex) || (own ? { [own]: 1 } : null);
+    if (!w) continue;
     const n = e.sets.filter((x) => !x.warm && x.done !== false).length;
-    if (n) { counts[key] = (counts[key] || 0) + n; last[key] = Math.max(last[key] || 0, s.start); }
+    if (!n) continue;
+    sets += n;
+    for (const [key, weight] of Object.entries(w)) { counts[key] = (counts[key] || 0) + n * weight; last[key] = Math.max(last[key] || 0, s.start); }
   }
-  return { counts, last, sessions: used.length, from: used.length ? used.at(-1).start : null };
+  return { counts, last, sets, sessions: used.length, from: used.length ? used.at(-1).start : null };
 }
+
+/** Sets with at most one decimal: 7, 7.5, 3.3 */
+export const fmtSets = (n) => String(Math.round(n * 10) / 10);
 
 let END = [255, 107, 31];
 /** The colour the heat ramp ends in (the second accent). */

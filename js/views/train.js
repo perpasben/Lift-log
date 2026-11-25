@@ -93,7 +93,7 @@ export async function trainView({ nav }) {
   const lifting = sessions.filter((s) => s.entries.length);
   const wk = weeklyCounts(lifting, Date.now(), 6);
   const avg = Math.round((wk.reduce((a, b) => a + b, 0) / wk.length) * 10) / 10;
-  const sets2w = Object.values(muscleLoad(sessions, exMap, { days: 14 }).counts).reduce((a, b) => a + b, 0);
+  const sets2w = muscleLoad(sessions, exMap, { days: 14 }).sets;
   const strip = lifting.length >= 3 ? h('div', { class: 'strip' },
     h('div', {}, h('span', { class: 'si' }, weekRing(wk.at(-1))), h('b', { class: 'num' }, `${wk.at(-1)}/4`), h('span', {}, 'last 7 days')),
     h('div', {}, h('span', { class: 'si', html: icon('history') }), h('b', { class: 'num' }, String(avg)), h('span', {}, 'workouts a week')),

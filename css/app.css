@@ -442,3 +442,5 @@ button.row:active.alt-row { background: none; }
 .rmset:active { background: var(--s2); }
 
 .mm-lab span { position: absolute; top: 0; transform: translateX(-50%); }
+
+.mm-note { color: var(--mu); font-size: 13px; line-height: 1.4; margin: 10px 2px 0; }
