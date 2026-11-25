@@ -1,6 +1,7 @@
 import * as db from '../db.js';
 import { h } from '../ui.js';
-import { muscleLoad, heat, MUSCLE_LABEL } from '../logic/stats.js';
+import { muscleLoad, mapHeat, MUSCLE_LABEL } from '../logic/stats.js';
+import { accent2 } from '../theme.js';
 
 import { MM } from '../mmdata.js';
 
@@ -10,7 +11,8 @@ const RANGES = [['7 days', { days: 7 }], ['14 days', { days: 14 }], ['Last 4 wor
 let rangeIdx = 0;
 
 function figures(counts) {
-  const muscles = Object.entries(MM.muscles).map(([key, d]) => `<path class="mm" data-m="${key}" fill="${heat(counts[key] || 0)}" d="${d}"/>`);
+  const light = accent2().hex;
+  const muscles = Object.entries(MM.muscles).map(([key, d]) => `<path class="mm" data-m="${key}" fill="${mapHeat(counts[key] || 0, light)}" d="${d}"/>`);
   return `<path fill="#16161a" d="${MM.sil}"/><path fill="#25252b" d="${MM.inert}"/>${muscles.join('')}`;
 }
 

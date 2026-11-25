@@ -195,7 +195,7 @@ test('niceRange gives tidy ticks and handles flat data', () => {
   assert.ok(f.lo < 50 && f.hi > 50);
 });
 
-import { muscleLoad, heat, ago } from '../js/logic/stats.js';
+import { muscleLoad, heat, ago, mapHeat } from '../js/logic/stats.js';
 test('muscleLoad: rolling days across week boundaries, warm-ups ignored, last-N mode', () => {
   const now = new Date(2026, 10, 25, 12).getTime(); // Wed
   const day = (n) => now - n * 86400000;
@@ -304,4 +304,13 @@ test('nextActiveSet follows the last ticked set and moves on when an exercise is
   assert.equal(nextActiveSet(w), null);                            // everything done
   const w2 = { entries: [ent('a', 3), ent('b', 3)], lastDone: { id: 'a', i: 2 } }; w2.entries[0].sets[2].done = true;
   assert.deepEqual(nextActiveSet(w2), { id: 'a', i: 0 });         // ticked the last set first: back to the earlier undone one
+});
+
+test('mapHeat: grey when idle, light accent for few sets, full accent from 10 sets', () => {
+  assert.equal(mapHeat(0), '#2d2d33');
+  assert.equal(mapHeat(10), '#ff6b1f');
+  assert.equal(mapHeat(30), '#ff6b1f');
+  assert.equal(mapHeat(0.001), '#ffc9a2');
+  const mid = mapHeat(5);
+  assert.notEqual(mid, '#ffc9a2'); assert.notEqual(mid, '#ff6b1f');
 });

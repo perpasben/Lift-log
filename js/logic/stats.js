@@ -101,6 +101,15 @@ export function heat(count, full = 10, end = END) {
   return `#${a.map((c, i) => Math.round(c + (end[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
 }
 
+/** Muscle map colour: idle grey when untrained, otherwise from the light accent (few sets) to the full accent (`full` sets or more). */
+export function mapHeat(count, light = '#ffc9a2', strong = '#ff6b1f', full = 10, idle = '#2d2d33') {
+  if (!(count > 0)) return idle;
+  const t = Math.min(1, count / full);
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const a = rgb(light), b = rgb(strong);
+  return `#${a.map((c, i) => Math.round(c + (b[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+}
+
 /** "today", "yesterday", "3 days ago" */
 export function ago(ms, now = Date.now()) {
   const d = Math.floor((now - ms) / 86400000);
