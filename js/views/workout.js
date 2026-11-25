@@ -1,6 +1,6 @@
 import * as db from '../db.js';
 import { h, sheet, toast, confirmSheet, kg } from '../ui.js';
-import { icon, hasIcon } from '../icons.js';
+import { icon } from '../icons.js';
 import { getActive, saveActive, clearActive } from '../active.js';
 import { startRest } from '../rest.js';
 import { pickExercise } from './picker.js';
@@ -12,7 +12,6 @@ import { unfinished, buildPending } from '../logic/carryover.js';
 import { akey } from '../logic/substitution.js';
 
 const NAMES = { push: 'Push', pull: 'Pull', leg: 'Leg', extra: 'Extra workout' };
-const RC = { push: '#e8590c', pull: '#4f84ee', leg: '#25a97a' };
 const num = (v) => (v.trim() === '' ? null : Number(v.replace(',', '.')));
 const mmss = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const h2 = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); return `${h2 ? `${h2}:` : ''}${String(m).padStart(h2 ? 2 : 1, '0')}:${String(s % 60).padStart(2, '0')}`; };
 
@@ -45,7 +44,6 @@ export async function workoutView({ nav }) {
   root.append(
     h('div', { class: 'wk-top' },
       h('button', { class: 'ibtn', 'aria-label': 'Back to home (workout keeps running)', html: icon('back'), onclick: () => nav.back() }),
-      hasIcon(w.routineId) ? h('span', { class: 'rchip', style: `--rc:${RC[w.routineId]}`, html: icon(w.routineId) }) : null,
       h('div', { class: 'ttl' }, h('b', {}, NAMES[w.routineId] || 'Workout'), h('span', {}, gym?.name, ' · ', elapsed)),
       h('button', { class: 'ibtn go', 'aria-label': 'Finish workout', html: icon('check'), onclick: () => finish(ctx) })),
     blocksEl,
