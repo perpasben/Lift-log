@@ -492,3 +492,12 @@ button.row:active.alt-row { background: none; }
 .st-card .chart { width: 100%; height: auto; display: block; }
 .st-note { color: var(--mu); font-size: 13px; line-height: 1.4; margin: 8px 2px 0; }
 .st-card .chart { border: 0; background: none; padding: 0; border-radius: 0; }
+
+/* overtraining warning on the home card */
+.hp-e.warn { color: var(--ac2); }
+.cta.ghost { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, .38); }
+.hp-why { display: block; margin-top: 12px; color: rgba(255, 255, 255, .7); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.hp-watch { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .42); border: 1px solid rgba(255, 201, 162, .3); color: var(--ac2); font-size: 14px; line-height: 1.35; }
+.why-list { display: grid; gap: 8px; margin-top: 6px; }
+.why { display: flex; gap: 10px; align-items: baseline; font-size: 16px; }
+.why i { width: 7px; height: 7px; border-radius: 50%; background: var(--ac2); flex: none; transform: translateY(-1px); }

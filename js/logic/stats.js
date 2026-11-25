@@ -250,6 +250,14 @@ export function trainingDaysPerWeek(sessions, now = Date.now(), weeks = 12) {
   return out.map((w) => ({ start: w.start, days: w.days.size }));
 }
 
+/** How strong a set was: estimated max for weight x reps, reps for bodyweight and reps-only, seconds for timed. 0 for warm-up or undone sets. */
+export function setStrength(type, x) {
+  if (x.warm || x.done === false) return 0;
+  if (type === 'wr') return x.w > 0 && x.r > 0 ? x.w * (1 + Math.min(x.r, 12) / 30) : 0;
+  if (type === 't') return x.t > 0 ? x.t : 0;
+  return x.r > 0 ? x.r : 0;
+}
+
 /**
  * One number for "am I getting stronger?": for every lift you log (an exercise at a gym) take its best effort of each week
  * (weight x reps as an estimated max; reps or seconds for bodyweight and timed lifts), compare with where that lift started,
@@ -258,12 +266,7 @@ export function trainingDaysPerWeek(sessions, now = Date.now(), weeks = 12) {
  * @returns {{points: {t:number, v:number}[], lifts:number} | null}
  */
 export function strengthIndex(sessions, exercises, now = Date.now()) {
-  const value = (type, x) => {
-    if (x.warm || x.done === false) return 0;
-    if (type === 'wr') return x.w > 0 && x.r > 0 ? x.w * (1 + Math.min(x.r, 12) / 30) : 0;
-    if (type === 't') return x.t > 0 ? x.t : 0;
-    return x.r > 0 ? x.r : 0; // bodyweight and reps-only
-  };
+  const value = setStrength;
   const lifts = new Map(); // key -> Map(weekStart -> best)
   for (const s of sessions) {
     if (!s.entries?.length || s.start > now) continue;

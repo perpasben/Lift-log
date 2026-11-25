@@ -3,6 +3,7 @@ import { h, sheet, toast } from '../ui.js';
 import { nextRoutine, pendingFor, ROTATION } from '../logic/carryover.js';
 import { buildWorkout, buildTopUpWorkout } from '../logic/workout.js';
 import { planTopUp } from '../logic/topup.js';
+import { assessLoad } from '../logic/load.js';
 import { getActive, setActive } from '../active.js';
 import { workoutView } from './workout.js';
 import { extrasView } from './extras.js';
@@ -83,6 +84,14 @@ function openTopUp(plan, exMap, nav) {
     h('button', { class: 'btn pri block', style: 'margin-top:16px', onclick: () => { close(); start('topup', nav); } }, 'Start')]);
 }
 
+function whyRest(load) {
+  sheet((close) => [h('h3', {}, 'Time to recover'),
+    h('div', { class: 'why-list' }, ...load.reasons.map((r) => h('div', { class: 'why' }, h('i', {}), h('span', {}, r.text[0].toUpperCase() + r.text.slice(1))))),
+    h('p', { class: 'how', style: 'margin-top:14px' }, 'Muscles grow while you recover, not while you lift. A lot of load with little rest stalls progress and raises the risk of getting hurt. One or two lighter days usually sort it out, and you do not lose progress.'),
+    h('p', { class: 'muted', style: 'font-size:13px;margin:10px 0 0' }, 'This is a guide built from what you log, not a diagnosis. Sleep, stress and food matter too.'),
+    h('button', { class: 'btn block', style: 'margin-top:16px', onclick: close }, 'Got it')]);
+}
+
 export async function trainView({ nav }) {
   const [sessions, routines, gyms, pending, settings, exAll, asgAll] = await Promise.all([db.all('sessions'), db.all('routines'), db.all('gyms'), db.all('pending'), db.kvGet('settings', {}), db.all('exercises'), db.all('assignments')]);
   const active = getActive();
@@ -103,16 +112,21 @@ export async function trainView({ nav }) {
   // trained already today? then this is what comes next; otherwise it is today's training, trained or not
   const today = dayKey(Date.now());
   const doneToday = !active && sessions.some((s) => s.entries.length && dayKey(s.start) === today);
+  // too much load with too little rest: say so on the card (see logic/load.js and docs/overtraining.md)
+  const load = active ? { level: 'ok', reasons: [] } : assessLoad(sessions, exMap, Date.now());
+  const rest = load.level === 'rest';
 
   const top = h('div', { class: 'home-top' }, h('div', { class: 'brand' }, h('img', { src: 'icons/icon-192.png', alt: '' }), h('b', {}, 'LiftLog')));
 
   const photo = heroPhoto(shownId);
   const name = NAMES[shownId] || 'Workout';
   const hero = h('div', { class: `hp ${photo ? 'has-photo' : ''}`, style: photo ? `background-image:url(${photo})` : '' },
-    h('div', { class: 'hp-e' }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : (doneToday ? 'Done for today \u00b7 next up' : `Today\u2019s training \u00b7 ${gym?.name}`)),
-    h('div', { class: 'hp-h' }, ['push', 'pull', 'leg'].includes(shownId) ? `${name} day.` : `${name}.`),
-    h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
-    h('button', { class: 'cta', onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : 'Start workout', h('span', { html: icon('arrow') })));
+    h('div', { class: `hp-e ${rest ? 'warn' : ''}` }, active ? `In progress \u00b7 ${gyms.find((g) => g.id === active.gymId)?.name}` : rest ? 'Overtraining risk \u00b7 rest up' : (doneToday ? 'Done for today \u00b7 next up' : `Today\u2019s training \u00b7 ${gym?.name}`)),
+    h('div', { class: 'hp-h' }, rest ? 'Rest day.' : ['push', 'pull', 'leg'].includes(shownId) ? `${name} day.` : `${name}.`),
+    h('div', { class: 'hp-s' }, active ? `Started ${new Date(active.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : rest ? load.reasons.slice(0, 2).map((r) => r.text).join(' \u00b7 ') : [`${plan.length || routine.blocks.length} exercises`, `about ${minutes} min`, carried ? `${carried} carried over` : null].filter(Boolean).join(' \u00b7 ')),
+    load.level === 'watch' ? h('div', { class: 'hp-watch' }, `Heavy week: ${load.reasons[0].text}. A rest day soon helps.`) : null,
+    h('button', { class: `cta ${rest ? 'ghost' : ''}`, onclick: () => (active ? nav.push(workoutView, 'up') : start(next, nav)) }, active ? 'Resume workout' : rest ? 'Train anyway' : 'Start workout', h('span', { html: icon('arrow') })),
+    rest ? h('button', { class: 'hp-why', onclick: () => whyRest(load) }, 'Why rest?') : null);
 
   // three real numbers, one strip
   const lifting = sessions.filter((s) => s.entries.length);
@@ -125,7 +139,7 @@ export async function trainView({ nav }) {
     h('div', {}, h('span', { class: 'si', html: icon('train') }), h('b', { class: 'num' }, String(sets2w)), h('span', {}, 'sets, 2 weeks'))) : null;
 
   const planSec = active || !plan.length ? null : h('div', {},
-    h('div', { class: 'sec-h' }, h('b', {}, doneToday ? 'Next workout' : 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
+    h('div', { class: 'sec-h' }, h('b', {}, doneToday || rest ? 'Next workout' : 'Today\u2019s plan'), h('span', {}, `${plan.length} exercises`)),
     h('div', { class: 'plan' }, ...plan.map((p, i) => {
       const ex = exMap[p.id];
       return h('button', { class: 'plan-row', onclick: () => sheet((close) => [h('h3', {}, ex.name), h('p', { class: 'muted', style: 'margin:0 0 10px' }, `${p.sets} sets${p.repMax ? ` \u00b7 ${p.repMin === p.repMax ? p.repMax : `${p.repMin}\u2013${p.repMax}`} reps` : ''}`), h('p', { class: 'how' }, howTo(ex) || 'No description yet.'), h('button', { class: 'btn block', style: 'margin-top:16px', onclick: close }, 'Close')]) },

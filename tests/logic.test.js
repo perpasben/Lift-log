@@ -487,3 +487,44 @@ test('strengthIndex: 100 at the start, median across lifts, null without enough 
   assert.equal(strengthIndex(sessions.filter((s) => s.entries[0].exerciseId !== 'c'), exs, now), null); // only two lifts
   assert.equal(strengthIndex([], exs, now), null);
 });
+
+import { assessLoad, trainingStreak, recentStrengthRatio, LIMITS } from '../js/logic/load.js';
+test('assessLoad: a normal week is fine; a week-long streak plus a volume spike asks for rest; resting clears it', () => {
+  const day = 86400000, now = new Date(2026, 10, 25, 12).getTime();
+  const exs = { 'bench-press': { id: 'bench-press', name: 'Bench Press', type: 'wr', muscle: 'Chest' }, 'seated-leg-press': { id: 'seated-leg-press', name: 'Seated Leg Press', type: 'wr', muscle: 'Quads' } };
+  const sess = (ago, w = 60, n = 6) => ({ id: `s${ago}`, gymId: 'g', start: now - ago * day - 3600000, entries: [{ exerciseId: 'bench-press', sets: Array.from({ length: n }, () => ({ w, r: 8, done: true })) }, { exerciseId: 'seated-leg-press', sets: Array.from({ length: n }, () => ({ w: 120, r: 10, done: true })) }] });
+  const usual = []; for (let wk = 1; wk <= 5; wk++) for (const d of [0, 2, 4]) usual.push(sess(wk * 7 + d + 1)); // 3 workouts a week, 12 sets each, for 5 weeks
+  assert.equal(assessLoad(usual, exs, now).level, 'ok');
+  assert.equal(assessLoad([], exs, now).level, 'ok');
+
+  const heavy = [...usual]; for (let a = 0; a < 7; a++) heavy.push(sess(a, 60, 7));             // 7 days in a row, 14 sets each
+  const r = assessLoad(heavy, exs, now);
+  assert.equal(r.level, 'rest');
+  assert.ok(r.reasons.some((x) => x.kind === 'streak') && r.reasons.some((x) => x.kind === 'spike'));
+  assert.equal(trainingStreak(heavy, now), 7);
+
+  const rested = [...usual]; for (let a = 3; a < 10; a++) rested.push(sess(a, 60, 7));          // the same load, but nothing for the last 2 days
+  assert.equal(assessLoad(rested, exs, now).level, 'ok');
+
+  const five = [...usual]; for (let a = 0; a < 5; a++) five.push(sess(a, 60, 4));                // 5 days in a row at a lighter pace: fine
+  assert.equal(assessLoad(five, exs, now).level, 'ok');
+  const seven = [...usual]; for (let a = 0; a < 7; a++) seven.push(sess(a, 60, 3));              // 7 days in a row but light: a heads up, not a stop
+  const w = assessLoad(seven, exs, now);
+  assert.equal(w.level, 'watch');
+  assert.ok(w.score >= LIMITS.watch && w.score < LIMITS.rest);
+});
+
+test('assessLoad: a sustained drop in your lifts only weighs heavily together with high load', () => {
+  const day = 86400000, now = new Date(2026, 10, 25, 12).getTime();
+  const ids = ['bench-press', 'seated-leg-press', 'lat-pulldown'];
+  const exs = Object.fromEntries(ids.map((id) => [id, { id, name: id, type: 'wr', muscle: 'Chest' }]));
+  const sess = (ago, w) => ({ id: `s${ago}`, gymId: 'g', start: now - ago * day - 3600000, entries: ids.map((id) => ({ exerciseId: id, sets: Array.from({ length: 4 }, () => ({ w, r: 8, done: true })) })) });
+  const before = [30, 27, 24, 20].map((a) => sess(a, 100));                                      // a month ago
+  const dipped = [...before, ...[10, 7, 4].map((a) => sess(a, 90)), sess(1, 90)];               // since then 10% lower, but every other day
+  assert.ok(recentStrengthRatio(dipped, exs, now) <= LIMITS.drop);
+  assert.equal(assessLoad(dipped, exs, now).level, 'ok');                                        // a dip alone is not a rest order
+  const dippedAndGrinding = [...before, ...[10, 7, 6, 5, 4, 3, 2, 1, 0].map((a) => sess(a, 90))]; // plus nine days in a row
+  const r = assessLoad(dippedAndGrinding, exs, now);
+  assert.equal(r.level, 'rest');
+  assert.ok(r.reasons.some((x) => x.kind === 'drop'));
+});
